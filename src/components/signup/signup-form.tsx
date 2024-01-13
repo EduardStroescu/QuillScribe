@@ -106,6 +106,7 @@ const SignupForm = () => {
             alt="QuillScribe Logo"
             width={100}
             height={100}
+            style={{width: "100px", height: "100px"}}
           />
           <span
             className="font-semibold

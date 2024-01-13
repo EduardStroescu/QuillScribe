@@ -8,6 +8,7 @@ export async function middleware(req: NextRequest) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
+
   if (req.nextUrl.pathname.startsWith("/dashboard")) {
     if (!session) {
       return NextResponse.redirect(new URL("/login", req.url));
@@ -15,6 +16,7 @@ export async function middleware(req: NextRequest) {
   }
 
   const emailLinkError = "Email link is invalid or has expired";
+
   if (
     req.nextUrl.searchParams.get("error_description") === emailLinkError &&
     req.nextUrl.pathname !== "/signup"
@@ -34,6 +36,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
   }
+
   return res;
 }
 
@@ -41,10 +44,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
+     * - api (api routes)
+     * - pages (socket.io)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!api|pages|_next/static|_next/image|favicon.ico).*)",
   ],
 };

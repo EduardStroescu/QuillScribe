@@ -79,7 +79,7 @@ STRIPE_WEBHOOK_SECRET_LIVE= /* For Production Use Only / Don't include at all wh
 
 ```bash
 
-git  clone
+git  clone https://github.com/EduardStroescu/QuillScribe.git
 
 npm  install
 
@@ -110,4 +110,4 @@ npm  run  build
 
 ## Disclaimer
 
-`Deploying the project to Vercel will cause the socket to stop working (resulting no real-time), because of Vercel's edge functions' transfer limits. To keep the functionality please deploy to Railway or another platform which supports real-time connections. `
+`Deploying the project to Vercel will cause the socket to stop working (resulting in no real-time), because of Vercel's edge functions' transfer limits. To keep the functionality please deploy to Railway or another platform which supports real-time connections. `

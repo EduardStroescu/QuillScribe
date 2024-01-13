@@ -1,7 +1,9 @@
 'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
+
 import Logo from '../../../public/quillScribeLogo.svg';
 
 import {
@@ -20,7 +22,7 @@ import { Button } from '../ui/button';
 
 const routes = [
   { title: 'Features', href: '#features' },
-  { title: 'Reasources', href: '#resources' },
+  { title: 'Resources', href: '#resources' },
   { title: 'Pricing', href: '#pricing' },
   { title: 'Testimonials', href: '#testimonial' },
 ];
@@ -83,6 +85,7 @@ const Header = () => {
           alt="QuillScribe Logo"
           width={100}
           height={100}
+          style={{width: "100px", height: "100px"}}
         />
         <span
           className="font-semibold
@@ -134,19 +137,19 @@ const Header = () => {
                   </span>
                 </li>
                 <ListItem
-                  href="#"
+                  href="/"
                   title="Introduction"
                 >
                   Re-usable components built using Radix UI and Tailwind CSS.
                 </ListItem>
                 <ListItem
-                  href="#"
+                  href="/"
                   title="Installation"
                 >
                   How to install dependencies and structure your app.
                 </ListItem>
                 <ListItem
-                  href="#"
+                  href="/"
                   title="Typography"
                 >
                   Styles for headings, paragraphs, lists...etc
@@ -170,13 +173,13 @@ const Header = () => {
               <ul className="grid w-[400px] gap-3 p-4  md:grid-row-2  ">
                 <ListItem
                   title="Pro Plan"
-                  href={'#'}
+                  href="/"
                 >
-                  Unlock full power with collaboration.
+                  Unlock the full power of collaboration.
                 </ListItem>
                 <ListItem
-                  title={'Free Plan'}
-                  href={'#'}
+                  title="Free Plan"
+                  href="/"
                 >
                   Great for teams just starting out.
                 </ListItem>
@@ -208,14 +211,16 @@ const Header = () => {
           </NavigationMenuItem>
           <NavigationMenuItem>
             <NavigationMenuLink
+            href='/'
               className={cn(navigationMenuTriggerStyle(), {
                 'dark:text-white': path === '#testimonials',
                 'dark:text-white/40': path !== '#testimonials',
                 'font-normal': true,
                 'text-xl': true,
+                'cursor-pointer': true,
               })}
             >
-              Testimonial
+              Testimonials
             </NavigationMenuLink>
           </NavigationMenuItem>
         </NavigationMenuList>
@@ -264,15 +269,18 @@ const ListItem = React.forwardRef<
           )}
           {...props}
         >
-          <div className="text-white text-sm font-medium leading-none">
+          <div className="text-black dark:text-white text-sm font-medium leading-none">
             {title}
           </div>
           <p
-            className="group-hover:text-white/70
+            className="
+            group-hover:text-black/70
+            dark:group-hover:text-white/70
             line-clamp-2
             text-sm
             leading-snug
-            text-white/40
+            text-black/40
+            dark:text-white/40
           "
           >
             {children}

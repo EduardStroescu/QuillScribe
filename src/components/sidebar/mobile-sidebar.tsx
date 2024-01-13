@@ -26,7 +26,11 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ children }) => {
   const [selectedNav, setSelectedNav] = useState('');
   return (
     <>
-      {selectedNav === 'sidebar' && <>{children}</>}
+      {selectedNav === 'sidebar' && 
+      <>
+      {children}
+      </>
+      }
       <nav
         className="bg-black/10
       backdrop-blur-lg
@@ -56,7 +60,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ children }) => {
                 setSelectedNav(item.id);
               }}
             >
-              <item.customIcon></item.customIcon>
+              <item.customIcon />
               <small
                 className={clsx('', {
                   'text-muted-foreground': selectedNav !== item.id,

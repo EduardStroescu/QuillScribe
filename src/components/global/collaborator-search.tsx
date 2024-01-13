@@ -95,8 +95,8 @@ const CollaboratorSearch: React.FC<CollaboratorSearchProps> = ({
             )
             .filter((result) => result.id !== user?.id)
             .map((user) => {
-              const avatarUrl = supabase.storage.from('avatars').getPublicUrl(user?.avatarUrl ? user?.avatarUrl : "null")
-                .data.publicUrl;
+              const avatarUrl = user?.avatarUrl ? supabase.storage.from('avatars').getPublicUrl(user?.avatarUrl)
+                .data.publicUrl : "";
               return (
               <div
                 key={user.id}

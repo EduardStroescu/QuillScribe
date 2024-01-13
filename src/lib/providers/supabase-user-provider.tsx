@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { getUserSubscriptionStatus } from '../supabase/queries';
 import { useToast } from '@/components/ui/use-toast';
+import { usePathname } from 'next/navigation';
 
 type SupabaseUserContextType = {
   user: AuthUser | null;
@@ -31,6 +32,7 @@ export const SupabaseUserProvider: React.FC<SupabaseUserProviderProps> = ({
   const [user, setUser] = useState<AuthUser | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const { toast } = useToast();
+  const pathname = usePathname();
 
   const supabase = createClientComponentClient();
 
@@ -48,13 +50,17 @@ export const SupabaseUserProvider: React.FC<SupabaseUserProviderProps> = ({
           toast({
             title: 'Unexpected Error',
             description:
-              'Oppse! An unexpected error happened. Try again later.',
+              'Opps! An unexpected error occurred. Please try again later.',
           });
         }
       }
     };
+
+    if (!user && pathname !== "/" && pathname !== "/login" && pathname !== "/signup") {
     getUser();
-  }, [supabase, toast]);
+  }
+  }, [pathname, user, supabase, toast]);
+
   return (
     <SupabaseUserContext.Provider value={{ user, subscription }}>
       {children}

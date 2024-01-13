@@ -581,8 +581,9 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
                     border-2 
                     flex 
                     items-center 
-                    justify-center 
-                    border-white 
+                    justify-center
+                    border-primary 
+                    dark:border-white 
                     h-8 
                     w-8 
                     rounded-full
@@ -608,7 +609,7 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
             {saving ? (
               <Badge
                 variant="secondary"
-                className="bg-orange-600 top-4
+                className="bg-orange-600 hover:bg-orange-700 top-4
                 text-white
                 right-4
                 z-50
@@ -619,7 +620,7 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
             ) : (
               <Badge
                 variant="secondary"
-                className="bg-emerald-600 
+                className="bg-emerald-600 hover:bg-emerald-700
                 top-4
               text-white
               right-4

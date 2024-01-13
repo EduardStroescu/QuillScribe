@@ -38,8 +38,8 @@ const UserCard: React.FC<UserCardProps> = async ({ subscription }) => {
 
   return (
     <article
-      className="hidden
-      sm:flex 
+      className="
+      flex 
       justify-between 
       items-center 
       px-2 
@@ -60,9 +60,10 @@ const UserCard: React.FC<UserCardProps> = async ({ subscription }) => {
             {subscription?.status === 'active' ? 'Pro Plan' : 'Free Plan'}
           </span>
           <small
-            className="w-[100px] 
-          overflow-hidden 
-          overflow-ellipsis
+            className="
+            w-[100px] 
+            overflow-hidden 
+            overflow-ellipsis
           "
           >
             {profile.email}

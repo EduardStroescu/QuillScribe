@@ -23,7 +23,7 @@ const Layout: React.FC<LayoutProps> = ({ children, params }) => {
         />
       </MobileSidebar>
       <div
-        className="dark:boder-Neutrals-12/70
+        className="dark:border-Neutrals-12/70
         border-l-[1px]
         w-full
         relative

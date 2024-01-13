@@ -157,13 +157,12 @@ const WorkspaceCreator = () => {
               addCollaborator(user);
             }}
           >
-            <Button
-              type="button"
-              className="text-sm mt-4"
-            >
+            <div
+                className="inline-flex items-center justify-center font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 whitespace-nowrap bg-primary text-primary-foreground shadow-2xl shadow-indigo-600/50 rounded-lg text-sm mt-4"
+              >
               <Plus />
               Add Collaborators
-            </Button>
+            </div>
           </CollaboratorSearch>
           <div className="mt-4">
             <span className="text-sm text-muted-foreground">
@@ -180,24 +179,27 @@ const WorkspaceCreator = () => {
             >
               {collaborators.length ? (
                 collaborators.map((c) => {
-                  const avatarUrl = supabase.storage.from('avatars').getPublicUrl(c?.avatarUrl ? c?.avatarUrl : "null")
-                .data.publicUrl;
+                  const avatarUrl = c?.avatarUrl ? supabase.storage.from('avatars').getPublicUrl(c?.avatarUrl)
+                .data.publicUrl : "";
                   return (
                   <div
-                    className="p-4 flex
+                    className="
+                      sm:w-[calc(100%-100px)]
+                      sm:px-2
+                      py-1
+                      flex
                       justify-between
                       items-center
                 "
                     key={c.id}
                   >
-                    <div className="flex gap-4 items-center">
+                    <div className="flex gap-2 items-center">
                       <Avatar>
                         <AvatarImage src={avatarUrl} alt="Collaborator Avatar" />
                         <AvatarFallback>{c.email?.slice(0,2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div
                         className="text-sm 
-                          gap-2
                           text-muted-foreground
                           overflow-hidden
                           overflow-ellipsis

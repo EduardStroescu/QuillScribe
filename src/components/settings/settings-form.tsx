@@ -341,11 +341,14 @@ const SettingsForm = () => {
               >
                 {collaborators.length ? (
                   collaborators.map((c) => { 
-                    const avatarUrl = supabase.storage.from('avatars').getPublicUrl(c?.avatarUrl ? c?.avatarUrl : "null")
-                .data.publicUrl;
+                    const avatarUrl = c?.avatarUrl ? supabase.storage.from('avatars').getPublicUrl(c?.avatarUrl)
+                .data.publicUrl : "";
                     return (
                     <div
-                      className="py-1 flex
+                      className="
+                      sm:w-[calc(100%-100px)]
+                      sm:px-2
+                      py-1 flex
                       justify-between
                       items-center
                 "
@@ -354,11 +357,10 @@ const SettingsForm = () => {
                       <div className="flex gap-2 items-center">
                         <Avatar>
                           <AvatarImage src={avatarUrl} alt="Collaborator Avatar" />
-                          <AvatarFallback>QS</AvatarFallback>
+                          <AvatarFallback>{c?.email?.slice(0,2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div
                           className="text-sm 
-                          gap-2
                           text-muted-foreground
                           overflow-hidden
                           overflow-ellipsis
