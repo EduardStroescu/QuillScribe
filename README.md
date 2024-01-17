@@ -73,6 +73,13 @@ a self-hosted webhook endpoint for supabase product population and test purchase
 STRIPE_WEBHOOK_SECRET_LIVE= /* For Production Use Only / Don't include at all when
  viewing locally */
 
+_Provide Demo Accounts made on Supabase_
+
+NEXT_PUBLIC_PRO_DEMO_EMAIL=
+NEXT_PUBLIC_PRO_DEMO_PASS=
+NEXT_PUBLIC_FREE_DEMO_EMAIL=
+NEXT_PUBLIC_FREE_DEMO_PASS=
+
 ```
 
 ## Local development

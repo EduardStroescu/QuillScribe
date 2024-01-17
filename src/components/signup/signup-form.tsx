@@ -104,6 +104,7 @@ const SignupForm = () => {
           <Image
             src={Logo}
             alt="QuillScribe Logo"
+            priority
             width={100}
             height={100}
             style={{width: "100px", height: "100px"}}

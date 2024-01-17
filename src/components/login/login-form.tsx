@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Loader from '@/components/global/Loader';
 import { actionLoginUser } from '@/lib/server-actions/auth-actions';
+import DemoAccountLogin from './demo-account-login';
 
 const LoginForm = () => {
   const router = useRouter();
@@ -69,6 +70,7 @@ const LoginForm = () => {
             width={100}
             height={100}
             style={{width: "100px", height: "100px"}}
+            priority
           />
           <span
             className="font-semibold
@@ -132,6 +134,7 @@ const LoginForm = () => {
             Sign Up
           </Link>
         </span>
+        <DemoAccountLogin setSubmitError={setSubmitError}/>
       </form>
     </Form>
   );
