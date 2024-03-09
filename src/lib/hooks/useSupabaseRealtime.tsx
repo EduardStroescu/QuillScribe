@@ -24,9 +24,7 @@ const useSupabaseRealtime = () => {
               workspace_id: workspaceId,
               id: fileId,
             } = payload.new;
-            if (
-              !findFileById(state, workspaceId, folderId, fileId)
-            ) {
+            if (!findFileById(state, workspaceId, folderId, fileId)) {
               const newFile: File = {
                 id: payload.new.id,
                 workspaceId: payload.new.workspace_id,
@@ -102,9 +100,7 @@ const useSupabaseRealtime = () => {
         async (payload) => {
           if (payload.eventType === "INSERT") {
             const { id: folderId, workspace_id: workspaceId } = payload.new;
-            if (
-              !findFolderById(state, workspaceId, folderId)
-            ) {
+            if (!findFolderById(state, workspaceId, folderId)) {
               const newFolder: Folder = {
                 id: payload.new.id,
                 workspaceId: payload.new.workspace_id,
@@ -140,8 +136,7 @@ const useSupabaseRealtime = () => {
               });
             }
           } else if (payload.eventType === "UPDATE") {
-            const { workspace_id: workspaceId } =
-              payload.new;
+            const { workspace_id: workspaceId } = payload.new;
             state.workspaces.some((workspace) =>
               workspace.folders.some((folder) => {
                 if (folder.id === payload.new.id) {
@@ -175,9 +170,7 @@ const useSupabaseRealtime = () => {
         async (payload) => {
           if (payload.eventType === "INSERT") {
             const { id: workspaceId } = payload.new;
-            if (
-              !findWorkspaceById(state, workspaceId)
-            ) {
+            if (!findWorkspaceById(state, workspaceId)) {
               const newWorkspace: workspace = {
                 id: payload.new.id,
                 createdAt: payload.new.created_at,
@@ -193,7 +186,7 @@ const useSupabaseRealtime = () => {
                 type: "ADD_WORKSPACE",
                 payload: { ...newWorkspace, folders: [] },
               });
-              router.refresh()
+              router.refresh();
             }
           } else if (payload.eventType === "DELETE") {
             let workspaceId = "";
@@ -209,7 +202,6 @@ const useSupabaseRealtime = () => {
                 type: "DELETE_WORKSPACE",
                 payload: workspaceId,
               });
-              router.refresh()
             }
           } else if (payload.eventType === "UPDATE") {
             const { ...newWorkspace } = payload.new;
@@ -222,7 +214,6 @@ const useSupabaseRealtime = () => {
                     workspace: { ...newWorkspace },
                   },
                 });
-                router.refresh()
                 return true;
               }
             });

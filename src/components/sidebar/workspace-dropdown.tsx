@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useAppState } from '@/lib/providers/state-provider';
-import { workspace } from '@/lib/supabase/supabase.types';
-import React, { useEffect, useState } from 'react';
-import SelectedWorkspace from './selected-workspace';
-import CustomDialogTrigger from '../global/custom-dialog-trigger';
-import WorkspaceCreator from '../global/workspace-creator';
-import { findWorkspaceById } from '@/lib/utils';
+import { useAppState } from "@/lib/providers/state-provider";
+import { workspace } from "@/lib/supabase/supabase.types";
+import React, { useEffect, useState } from "react";
+import SelectedWorkspace from "./selected-workspace";
+import CustomDialogTrigger from "../global/custom-dialog-trigger";
+import WorkspaceCreator from "../global/workspace-creator";
+import { findWorkspaceById } from "@/lib/utils";
 
 interface WorkspaceDropdownProps {
   privateWorkspaces: workspace[] | [];
@@ -26,19 +26,17 @@ const WorkspaceDropdown: React.FC<WorkspaceDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (!state.workspaces.length) {
-      dispatch({
-        type: 'SET_WORKSPACES',
-        payload: {
-          workspaces: [
-            ...privateWorkspaces,
-            ...sharedWorkspaces,
-            ...collaboratingWorkspaces,
-          ].map((workspace) => ({ ...workspace, folders: [] })),
-        },
-      });
-    }
-  }, [privateWorkspaces, collaboratingWorkspaces, sharedWorkspaces, state.workspaces.length]);
+    dispatch({
+      type: "SET_WORKSPACES",
+      payload: {
+        workspaces: [
+          ...privateWorkspaces,
+          ...sharedWorkspaces,
+          ...collaboratingWorkspaces,
+        ].map((workspace) => ({ ...workspace, folders: [] })),
+      },
+    });
+  }, [privateWorkspaces, collaboratingWorkspaces, sharedWorkspaces, dispatch]);
 
   const handleSelect = (option: workspace) => {
     setSelectedOption(option);
@@ -61,7 +59,7 @@ const WorkspaceDropdown: React.FC<WorkspaceDropdownProps> = ({
           {selectedOption ? (
             <SelectedWorkspace workspace={selectedOption} />
           ) : (
-            'Select a workspace'
+            "Select a workspace"
           )}
         </span>
       </div>

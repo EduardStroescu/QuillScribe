@@ -1,23 +1,23 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import React from 'react';
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import React from "react";
 
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
 import {
   getCollaboratingWorkspaces,
   getFolders,
   getPrivateWorkspaces,
   getSharedWorkspaces,
   getUserSubscriptionStatus,
-} from '@/lib/supabase/queries';
-import { redirect } from 'next/navigation';
-import { twMerge } from 'tailwind-merge';
-import WorkspaceDropdown from './workspace-dropdown';
-import PlanUsage from './plan-usage';
-import NativeNavigation from './native-navigation';
-import { ScrollArea } from '../ui/scroll-area';
-import FoldersDropdownList from './folders-dropdown-list';
-import UserCard from './user-card';
-import { Separator } from '../ui/separator';
+} from "@/lib/supabase/queries";
+import { redirect } from "next/navigation";
+import { twMerge } from "tailwind-merge";
+import WorkspaceDropdown from "./workspace-dropdown";
+import PlanUsage from "./plan-usage";
+import NativeNavigation from "./native-navigation";
+import { ScrollArea } from "../ui/scroll-area";
+import FoldersDropdownList from "./folders-dropdown-list";
+import UserCard from "./user-card";
+import { Separator } from "../ui/separator";
 
 interface SidebarProps {
   params: { workspaceId: string };
@@ -42,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = async ({ params, className }) => {
     params.workspaceId
   );
   //error
-  if (subscriptionError || foldersError) redirect('/dashboard');
+  if (subscriptionError || foldersError) redirect("/dashboard");
 
   //get all the different workspaces: private && collaborating && shared
   const [privateWorkspaces, collaboratingWorkspaces, sharedWorkspaces] =
@@ -55,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = async ({ params, className }) => {
   return (
     <aside
       className={twMerge(
-        'hidden sm:flex sm:flex-col w-[280px] shrink-0 p-4 md:gap-4 !justify-between',
+        "hidden sm:flex sm:flex-col w-[280px] shrink-0 p-4 md:gap-4 !justify-between",
         className
       )}
     >

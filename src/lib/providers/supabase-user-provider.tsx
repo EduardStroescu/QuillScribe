@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { AuthUser } from '@supabase/supabase-js';
-import { Subscription } from '../supabase/supabase.types';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { getUserSubscriptionStatus } from '../supabase/queries';
-import { useToast } from '@/components/ui/use-toast';
-import { usePathname } from 'next/navigation';
+import { AuthUser } from "@supabase/supabase-js";
+import { Subscription } from "../supabase/supabase.types";
+import { createContext, useContext, useEffect, useState } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { getUserSubscriptionStatus } from "../supabase/queries";
+import { useToast } from "@/components/ui/use-toast";
+import { usePathname } from "next/navigation";
 
 type SupabaseUserContextType = {
   user: AuthUser | null;
@@ -48,17 +48,22 @@ export const SupabaseUserProvider: React.FC<SupabaseUserProviderProps> = ({
         if (data) setSubscription(data);
         if (error) {
           toast({
-            title: 'Unexpected Error',
+            title: "Unexpected Error",
             description:
-              'Opps! An unexpected error occurred. Please try again later.',
+              "Opps! An unexpected error occurred. Please try again later.",
           });
         }
       }
     };
 
-    if (!user && pathname !== "/" && pathname !== "/login" && pathname !== "/signup") {
-    getUser();
-  }
+    if (
+      !user &&
+      pathname !== "/" &&
+      pathname !== "/login" &&
+      pathname !== "/signup"
+    ) {
+      getUser();
+    }
   }, [pathname, user, supabase, toast]);
 
   return (

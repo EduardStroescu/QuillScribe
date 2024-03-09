@@ -16,21 +16,30 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIo) => {
     const io = new ServerIO(httpServer, {
       path,
       addTrailingSlash: false,
-    });
-    io.on("connection", (s) => {
-      s.on("create-room", (fileId) => {
-        s.join(fileId);
+    }).listen(3000);
+
+    io.on("connection", (socket) => {
+      socket.on("create-room", (fileId) => {
+        socket.join(fileId);
       });
-      s.on("send-changes", (deltas, fileId) => {
-        s.to(fileId).emit("receive-changes", deltas, fileId);
+      socket.on("send-changes", (deltas, fileId) => {
+        socket.to(fileId).emit("receive-changes", deltas, fileId);
       });
-      s.on("send-cursor-move", (range, fileId, cursorId) => {
-        s.to(fileId).emit("receive-cursor-move", range, fileId, cursorId);
+      socket.on("send-cursor-move", (range, fileId, cursorId) => {
+        socket.to(fileId).emit("receive-cursor-move", range, fileId, cursorId);
       });
     });
     res.socket.server.io = io;
+    res
+      .status(201)
+      .json({ success: true, message: "Socket is started", socket: `:3000` });
   }
-  res.end();
+  res.status(200).json({
+    success: true,
+    message: "Socket is already running",
+    socket: `:3000`,
+  });
+  return;
 };
 
 export default ioHandler;

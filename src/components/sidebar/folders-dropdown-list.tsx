@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { useAppState } from '@/lib/providers/state-provider';
-import { Folder } from '@/lib/supabase/supabase.types';
-import React, { useEffect, useState } from 'react';
-import TooltipComponent from '../global/tooltip-component';
-import { PlusIcon } from 'lucide-react';
-import { useSupabaseUser } from '@/lib/providers/supabase-user-provider';
-import { v4 } from 'uuid';
-import { createFolder } from '@/lib/supabase/queries';
-import { useToast } from '../ui/use-toast';
-import { Accordion } from '../ui/accordion';
-import Dropdown from './Dropdown';
-import useSupabaseRealtime from '@/lib/hooks/useSupabaseRealtime';
-import { useSubscriptionModal } from '@/lib/providers/subscription-modal-provider';
-import { findFolderById, findWorkspaceById } from '@/lib/utils';
+import { useAppState } from "@/lib/providers/state-provider";
+import { Folder } from "@/lib/supabase/supabase.types";
+import React, { useEffect, useState } from "react";
+import TooltipComponent from "../global/tooltip-component";
+import { PlusIcon } from "lucide-react";
+import { useSupabaseUser } from "@/lib/providers/supabase-user-provider";
+import { v4 } from "uuid";
+import { createFolder } from "@/lib/supabase/queries";
+import { useToast } from "../ui/use-toast";
+import { Accordion } from "../ui/accordion";
+import Dropdown from "./Dropdown";
+import useSupabaseRealtime from "@/lib/hooks/useSupabaseRealtime";
+import { useSubscriptionModal } from "@/lib/providers/subscription-modal-provider";
+import { findFolderById, findWorkspaceById } from "@/lib/utils";
 
 interface FoldersDropdownListProps {
   workspaceFolders: Folder[];
@@ -28,20 +28,23 @@ const FoldersDropdownList: React.FC<FoldersDropdownListProps> = ({
   const { state, dispatch, folderId } = useAppState();
   const { open, setOpen } = useSubscriptionModal();
   const { toast } = useToast();
-  const [folders, setFolders] = useState(workspaceFolders);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const { subscription } = useSupabaseUser();
+
+  useEffect(() => {
+    setFolders(workspaceFolders);
+  }, [workspaceFolders]);
 
   //set initial server state to the app state
   useEffect(() => {
     if (workspaceFolders.length > 0) {
       dispatch({
-        type: 'SET_FOLDERS',
+        type: "SET_FOLDERS",
         payload: {
           workspaceId,
           folders: workspaceFolders.map((folder) => ({
             ...folder,
-            files:
-              findFolderById(state, workspaceId, folder.id)?.files || [],
+            files: findFolderById(state, workspaceId, folder.id)?.files || [],
           })),
         },
       });
@@ -50,10 +53,7 @@ const FoldersDropdownList: React.FC<FoldersDropdownListProps> = ({
   //state
 
   useEffect(() => {
-    setFolders(
-      findWorkspaceById(state, workspaceId)
-        ?.folders || []
-    );
+    setFolders(findWorkspaceById(state, workspaceId)?.folders || []);
   }, [state, workspaceId]);
 
   //add folder
@@ -66,27 +66,27 @@ const FoldersDropdownList: React.FC<FoldersDropdownListProps> = ({
       data: null,
       id: v4(),
       createdAt: new Date().toISOString(),
-      title: 'Untitled',
-      iconId: '📄',
+      title: "Untitled",
+      iconId: "📄",
       inTrash: null,
       workspaceId,
-      bannerUrl: '',
+      bannerUrl: "",
     };
     dispatch({
-      type: 'ADD_FOLDER',
+      type: "ADD_FOLDER",
       payload: { workspaceId, folder: { ...newFolder, files: [] } },
     });
     const { data, error } = await createFolder(newFolder);
     if (error) {
       toast({
-        title: 'Error',
-        variant: 'destructive',
-        description: 'Could not create the folder',
+        title: "Error",
+        variant: "destructive",
+        description: "Could not create the folder",
       });
     } else {
       toast({
-        title: 'Success',
-        description: 'Created folder.',
+        title: "Success",
+        description: "Created folder.",
       });
     }
   };
@@ -129,7 +129,7 @@ const FoldersDropdownList: React.FC<FoldersDropdownListProps> = ({
       </div>
       <Accordion
         type="multiple"
-        defaultValue={[folderId || '']}
+        defaultValue={[folderId || ""]}
         className="pb-20"
       >
         {folders
