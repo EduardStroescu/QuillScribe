@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { MAX_FOLDERS_FREE_PLAN } from '@/lib/constants';
-import { useAppState } from '@/lib/providers/state-provider';
-import { Subscription } from '@/lib/supabase/supabase.types';
-import React, { useEffect, useState } from 'react';
-import { Progress } from '../ui/progress';
-import QuillScribeDiamondIcon from '../icons/quillScribeDiamondIcon';
-import { findWorkspaceById } from '@/lib/utils';
+import { MAX_FOLDERS_FREE_PLAN } from "@/lib/const/constants";
+import { useAppState } from "@/lib/providers/state-provider";
+import { Subscription } from "@/lib/supabase/supabase.types";
+import React, { useEffect, useState } from "react";
+import { Progress } from "../ui/progress";
+import QuillScribeDiamondIcon from "../icons/quillScribeDiamondIcon";
+import { findWorkspaceById } from "@/lib/utils";
 
 interface PlanUsageProps {
   foldersLength: number;
@@ -23,14 +23,15 @@ const PlanUsage: React.FC<PlanUsageProps> = ({
   );
 
   useEffect(() => {
-    const stateFoldersLength = findWorkspaceById(state, workspaceId)?.folders.length;
+    const stateFoldersLength = findWorkspaceById(state, workspaceId)?.folders
+      .length;
     if (stateFoldersLength === undefined) return;
     setUsagePercentage((stateFoldersLength / MAX_FOLDERS_FREE_PLAN) * 100);
   }, [state, workspaceId]);
 
   return (
     <article className="mb-4">
-      {subscription?.status !== 'active' && (
+      {subscription?.status !== "active" && (
         <div
           className="flex 
           gap-2
@@ -54,11 +55,8 @@ const PlanUsage: React.FC<PlanUsageProps> = ({
           </div>
         </div>
       )}
-      {subscription?.status !== 'active' && (
-        <Progress
-          value={usagePercentage}
-          className="h-1"
-        />
+      {subscription?.status !== "active" && (
+        <Progress value={usagePercentage} className="h-1" />
       )}
     </article>
   );

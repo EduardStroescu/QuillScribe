@@ -1,7 +1,7 @@
-import { SubscriptionModalProvider } from '@/lib/providers/subscription-modal-provider';
-import { getActiveProductsWithPrice } from '@/lib/supabase/queries';
-import { Metadata } from 'next';
-import React from 'react';
+import { SubscriptionModalProvider } from "@/lib/providers/subscription-modal-provider";
+import { getActiveProductsWithPrice } from "@/lib/supabase/queries";
+import { Metadata } from "next";
+import React from "react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 const Layout: React.FC<LayoutProps> = async ({ children, params }) => {
   const { data: products, error } = await getActiveProductsWithPrice();
-  if (error) throw new Error(`${error}`);
+  if (error) console.log(`${error}`);
   return (
     <main className="flex over-hidden h-screen">
       <SubscriptionModalProvider products={products}>

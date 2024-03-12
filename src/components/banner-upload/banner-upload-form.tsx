@@ -1,29 +1,31 @@
-'use client';
+"use client";
 
-import {useAppState} from '@/lib/providers/state-provider';
-import {v4} from 'uuid';
-import { UploadBannerFormSchema } from '@/lib/types';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import React from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { Label } from '../ui/label';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import Loader from '../global/Loader';
+import { useAppState } from "@/lib/providers/state-provider";
+import { v4 } from "uuid";
+import { UploadBannerFormSchema } from "@/lib/types";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import React from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import Loader from "../global/Loader";
 import {
   updateFile,
   updateFolder,
   updateWorkspace,
-} from '@/lib/supabase/queries';
+} from "@/lib/supabase/queries";
+import { useToast } from "../ui/use-toast";
 
 interface BannerUploadFormProps {
-  dirType: 'workspace' | 'file' | 'folder';
+  dirType: "workspace" | "file" | "folder";
   id: string;
 }
- 
+
 const BannerUploadForm: React.FC<BannerUploadFormProps> = ({ dirType, id }) => {
   const uuid = v4();
+  const { toast } = useToast();
   const supabase = createClientComponentClient();
   const { workspaceId, folderId, dispatch } = useAppState();
   const {
@@ -31,9 +33,9 @@ const BannerUploadForm: React.FC<BannerUploadFormProps> = ({ dirType, id }) => {
     handleSubmit,
     formState: { isSubmitting: isUploading, errors },
   } = useForm<z.infer<typeof UploadBannerFormSchema>>({
-    mode: 'onChange',
+    mode: "onChange",
     defaultValues: {
-      banner: '',
+      banner: "",
     },
   });
   const onSubmitHandler: SubmitHandler<
@@ -45,19 +47,22 @@ const BannerUploadForm: React.FC<BannerUploadFormProps> = ({ dirType, id }) => {
       let filePath = null;
 
       const uploadBanner = async () => {
-          await supabase.storage.from('file-banners').remove([`banner-${id}`]);
+        await supabase.storage.from("file-banners").remove([`banner-${id}`]);
         const { data, error } = await supabase.storage
-          .from('file-banners')
-          .upload(`banner-${id}?v=${uuid}`, file, { cacheControl: '5', upsert: true });
+          .from("file-banners")
+          .upload(`banner-${id}?v=${uuid}`, file, {
+            cacheControl: "5",
+            upsert: true,
+          });
         if (error) throw new Error();
         filePath = data.path;
       };
-      
-      if (dirType === 'file') {
+
+      if (dirType === "file") {
         if (!workspaceId || !folderId) return;
         await uploadBanner();
         dispatch({
-          type: 'UPDATE_FILE',
+          type: "UPDATE_FILE",
           payload: {
             file: { bannerUrl: filePath },
             fileId: id,
@@ -66,11 +71,11 @@ const BannerUploadForm: React.FC<BannerUploadFormProps> = ({ dirType, id }) => {
           },
         });
         await updateFile({ bannerUrl: filePath }, id);
-      } else if (dirType === 'folder') {
+      } else if (dirType === "folder") {
         if (!workspaceId || !folderId) return;
         await uploadBanner();
         dispatch({
-          type: 'UPDATE_FOLDER',
+          type: "UPDATE_FOLDER",
           payload: {
             folderId: id,
             folder: { bannerUrl: filePath },
@@ -78,11 +83,11 @@ const BannerUploadForm: React.FC<BannerUploadFormProps> = ({ dirType, id }) => {
           },
         });
         await updateFolder({ bannerUrl: filePath }, id);
-      } else if (dirType === 'workspace') {
+      } else if (dirType === "workspace") {
         if (!workspaceId) return;
         await uploadBanner();
         dispatch({
-          type: 'UPDATE_WORKSPACE',
+          type: "UPDATE_WORKSPACE",
           payload: {
             workspace: { bannerUrl: filePath },
             workspaceId,
@@ -90,17 +95,19 @@ const BannerUploadForm: React.FC<BannerUploadFormProps> = ({ dirType, id }) => {
         });
         await updateWorkspace({ bannerUrl: filePath }, id);
       }
-    } catch (error) {}
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error! Could not upload your banner, please try again later.",
+      });
+    }
   };
   return (
     <form
       onSubmit={handleSubmit(onSubmitHandler)}
       className="flex flex-col gap-2"
     >
-      <Label
-        className="text-sm text-muted-foreground"
-        htmlFor="bannerImage"
-      >
+      <Label className="text-sm text-muted-foreground" htmlFor="bannerImage">
         Banner Image
       </Label>
       <Input
@@ -108,16 +115,13 @@ const BannerUploadForm: React.FC<BannerUploadFormProps> = ({ dirType, id }) => {
         type="file"
         accept="image/*"
         disabled={isUploading}
-        {...register('banner', { required: 'Banner Image is required' })}
+        {...register("banner", { required: "Banner Image is required" })}
       />
       <small className="text-red-600">
         {errors.banner?.message?.toString()}
       </small>
-      <Button
-        disabled={isUploading}
-        type="submit"
-      >
-        {!isUploading ? 'Upload Banner' : <Loader />}
+      <Button disabled={isUploading} type="submit">
+        {!isUploading ? "Upload Banner" : <Loader />}
       </Button>
     </form>
   );

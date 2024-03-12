@@ -5,6 +5,7 @@
 html,
 body {
   height: 100%;
+  scroll-behavior: smooth;
 }
 
 @layer base {
@@ -118,6 +119,7 @@ body {
 }
 
 .ql-container {
+  min-height: 700px;
   @apply !border-none;
 }
 

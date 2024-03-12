@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { AuthUser } from '@supabase/supabase-js';
-import React, { useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { v4 } from 'uuid';
+import { AuthUser } from "@supabase/supabase-js";
+import React, { useState } from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { v4 } from "uuid";
 
 import {
   Card,
@@ -11,20 +11,20 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '../ui/card';
-import EmojiPicker from '../global/emoji-picker';
-import { Label } from '../ui/label';
-import { Input } from '../ui/input';
-import { Subscription, workspace } from '@/lib/supabase/supabase.types';
-import { Button } from '../ui/button';
-import Loader from '../global/Loader';
-import { createWorkspace } from '@/lib/supabase/queries';
-import { useToast } from '../ui/use-toast';
-import { useRouter } from 'next/navigation';
-import { useAppState } from '@/lib/providers/state-provider';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { CreateWorkspaceFormSchema } from '@/lib/types';
-import { z } from 'zod';
+} from "../ui/card";
+import EmojiPicker from "../global/emoji-picker";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import { Subscription, workspace } from "@/lib/supabase/supabase.types";
+import { Button } from "../ui/button";
+import Loader from "../global/Loader";
+import { createWorkspace } from "@/lib/supabase/queries";
+import { useToast } from "../ui/use-toast";
+import { useRouter } from "next/navigation";
+import { useAppState } from "@/lib/providers/state-provider";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { CreateWorkspaceFormSchema } from "@/lib/types";
+import { z } from "zod";
 
 interface DashboardSetupProps {
   user: AuthUser;
@@ -38,7 +38,7 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
   const { toast } = useToast();
   const router = useRouter();
   const { dispatch } = useAppState();
-  const [selectedEmoji, setSelectedEmoji] = useState('💼');
+  const [selectedEmoji, setSelectedEmoji] = useState("💼");
   const supabase = createClientComponentClient();
   const {
     register,
@@ -46,10 +46,10 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
     reset,
     formState: { isSubmitting: isLoading, errors },
   } = useForm<z.infer<typeof CreateWorkspaceFormSchema>>({
-    mode: 'onChange',
+    mode: "onChange",
     defaultValues: {
-      logo: '',
-      workspaceName: '',
+      logo: "",
+      workspaceName: "",
     },
   });
 
@@ -63,17 +63,18 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
     if (file) {
       try {
         const { data, error } = await supabase.storage
-          .from('workspace-logos')
+          .from("workspace-logos")
           .upload(`workspaceLogo.${workspaceUUID}`, file, {
-            cacheControl: '3600',
+            cacheControl: "3600",
             upsert: true,
           });
-        if (error) throw new Error('');
+        if (error) throw new Error();
         filePath = data.path;
       } catch (error) {
         toast({
-          variant: 'destructive',
-          title: 'Error! Could not upload your workspace logo',
+          variant: "destructive",
+          title:
+            "Error! Could not upload your workspace logo, try again later.",
         });
       }
     }
@@ -83,33 +84,33 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
         createdAt: new Date().toISOString(),
         iconId: selectedEmoji,
         id: workspaceUUID,
-        inTrash: '',
+        inTrash: "",
         title: value.workspaceName,
         workspaceOwner: user.id,
         logo: filePath || null,
-        bannerUrl: '',
+        bannerUrl: "",
       };
       const { data, error: createError } = await createWorkspace(newWorkspace);
       if (createError) {
         throw new Error();
       }
       dispatch({
-        type: 'ADD_WORKSPACE',
+        type: "ADD_WORKSPACE",
         payload: { ...newWorkspace, folders: [] },
       });
 
       toast({
-        title: 'Workspace Created',
+        title: "Workspace Created",
         description: `${newWorkspace.title} has been created successfully.`,
       });
 
       router.replace(`/dashboard/${newWorkspace.id}`);
     } catch (error) {
       toast({
-        variant: 'destructive',
-        title: 'Could not create your workspace',
+        variant: "destructive",
+        title: "Could not create your workspace",
         description:
-          "Oops! Something went wrong, and we couldn't create your workspace. Try again or come back later.",
+          "Oops! Something went wrong and we couldn't create your workspace. Try again or come back later.",
       });
     } finally {
       reset();
@@ -157,8 +158,8 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
                   type="text"
                   placeholder="Workspace Name"
                   disabled={isLoading}
-                  {...register('workspaceName', {
-                    required: 'Workspace name is required',
+                  {...register("workspaceName", {
+                    required: "Workspace name is required",
                   })}
                 />
                 <small className="text-red-600">
@@ -180,15 +181,15 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
                 type="file"
                 accept="image/*"
                 placeholder="Workspace Name"
-                disabled={isLoading || subscription?.status !== 'active'}
-                {...register('logo', {
+                disabled={isLoading || subscription?.status !== "active"}
+                {...register("logo", {
                   required: false,
                 })}
               />
               <small className="text-red-600">
                 {errors?.logo?.message?.toString()}
               </small>
-              {subscription?.status !== 'active' && (
+              {subscription?.status !== "active" && (
                 <small
                   className="
                   text-muted-foreground
@@ -200,11 +201,8 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
               )}
             </div>
             <div className="self-end">
-              <Button
-                disabled={isLoading}
-                type="submit"
-              >
-                {!isLoading ? 'Create Workspace' : <Loader />}
+              <Button disabled={isLoading} type="submit">
+                {!isLoading ? "Create Workspace" : <Loader />}
               </Button>
             </div>
           </div>

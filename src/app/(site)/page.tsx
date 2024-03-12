@@ -7,7 +7,7 @@ import clsx from "clsx";
 import TitleSection from "@/components/landing-page/title-section";
 import Banner from "../../../public/appBanner.png";
 import Cal from "../../../public/cal.png";
-import { CLIENTS, USERS } from "@/lib/constants";
+import { CLIENTS, USERS } from "@/lib/const/constants";
 import CustomCard from "@/components/landing-page/custom-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CardDescription, CardTitle } from "@/components/ui/card";
@@ -63,17 +63,20 @@ const HomePage = () => {
         <div
           className="md:mt-[-90px]
           sm:w-full
-          w-[750px]
+          w-full
           flex
           justify-center
           items-center
-          mt-[-40px]
           relative
           sm:ml-0
-          ml-[-50px]
         "
         >
-          <Image src={Banner} alt="Application Banner" loading="eager" />
+          <Image
+            src={Banner}
+            alt="Application Banner"
+            loading="eager"
+            className="object-contain"
+          />
           <div
             className="bottom-0
             top-[50%]
@@ -213,6 +216,7 @@ const HomePage = () => {
           overflow-x-hidden
           overflow-visible
         "
+          id="testimonials"
         >
           <TitleSection
             title="Trusted by all"
@@ -251,7 +255,9 @@ const HomePage = () => {
                     >
                       <Avatar>
                         <AvatarImage src={`/avatars/${index + 1}.png`} alt="" />
-                        <AvatarFallback>{testimonial.name.slice(0,2).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>
+                          {testimonial.name.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
                         <CardTitle className="text-foreground">
@@ -279,6 +285,7 @@ const HomePage = () => {
         px-4
         sm:px-6
       "
+        id="pricing"
       >
         <TitleSection
           title="The Perfect Plan For You"

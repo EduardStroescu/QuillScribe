@@ -2,7 +2,7 @@
 
 import React from "react";
 import CustomCard from "./custom-card";
-import { PRICING_CARDS, PRICING_PLANS } from "@/lib/constants";
+import { PRICING_CARDS, PRICING_PLANS } from "@/lib/const/constants";
 import clsx from "clsx";
 import Image from "next/image";
 import { useRouter } from "next/navigation";

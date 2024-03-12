@@ -26,22 +26,19 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = async ({ params, className }) => {
   const supabase = createServerComponentClient({ cookies });
-  //user
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) return;
 
-  //subscr
   const { data: subscriptionData, error: subscriptionError } =
     await getUserSubscriptionStatus(user.id);
 
-  //folders
   const { data: workspaceFolderData, error: foldersError } = await getFolders(
     params.workspaceId
   );
-  //error
+
   if (subscriptionError || foldersError) redirect("/dashboard");
 
   //get all the different workspaces: private && collaborating && shared
@@ -55,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = async ({ params, className }) => {
   return (
     <aside
       className={twMerge(
-        "hidden sm:flex sm:flex-col w-[280px] shrink-0 p-4 md:gap-4 !justify-between",
+        "hidden sm:flex sm:flex-col w-[280px] h-[calc(100vh-64px)] sm:h-screen shrink-0 p-4 md:gap-4 !justify-between",
         className
       )}
     >
@@ -77,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = async ({ params, className }) => {
         <NativeNavigation myWorkspaceId={params.workspaceId} />
         <ScrollArea
           className="overflow-y-auto relative
-          h-[430px] sm:h-[450px]
+          h-[250px] sm:h-[450px]
         "
         >
           <Separator />

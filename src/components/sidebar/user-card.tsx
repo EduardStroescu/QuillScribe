@@ -1,13 +1,13 @@
-import React from 'react';
-import { Subscription } from '@/lib/supabase/supabase.types';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import db from '@/lib/supabase/db';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import QuillScribeProfileIcon from '../icons/quillScribeProfileIcon';
-import ModeToggle from '../global/mode-toggle';
-import { LogOut } from 'lucide-react';
-import LogoutButton from '../global/logout-button';
+import React from "react";
+import { Subscription } from "@/lib/supabase/supabase.types";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+import db from "@/lib/supabase/db";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import QuillScribeProfileIcon from "../icons/quillScribeProfileIcon";
+import ModeToggle from "../global/mode-toggle";
+import { LogOut } from "lucide-react";
+import LogoutButton from "../global/logout-button";
 
 interface UserCardProps {
   subscription: Subscription | null;
@@ -25,10 +25,10 @@ const UserCard: React.FC<UserCardProps> = async ({ subscription }) => {
   });
   let avatarPath;
   if (!response) return;
-  if (!response.avatarUrl) avatarPath = '';
+  if (!response.avatarUrl) avatarPath = "";
   else {
     avatarPath = supabase.storage
-      .from('avatars')
+      .from("avatars")
       .getPublicUrl(response.avatarUrl)?.data.publicUrl;
   }
   const profile = {
@@ -44,6 +44,7 @@ const UserCard: React.FC<UserCardProps> = async ({ subscription }) => {
       items-center 
       px-2 
       py-2 
+      bg-primary
       dark:bg-primary-purple-900
       rounded-3xl
   "
@@ -56,14 +57,15 @@ const UserCard: React.FC<UserCardProps> = async ({ subscription }) => {
           </AvatarFallback>
         </Avatar>
         <div className="flex flex-col">
-          <span className="text-accent-foreground">
-            {subscription?.status === 'active' ? 'Pro Plan' : 'Free Plan'}
+          <span className="text-[#f9fafb]">
+            {subscription?.status === "active" ? "Pro Plan" : "Free Plan"}
           </span>
           <small
             className="
             w-[100px] 
             overflow-hidden 
             overflow-ellipsis
+            text-[#cac2ff]
           "
           >
             {profile.email}

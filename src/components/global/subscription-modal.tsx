@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { useSubscriptionModal } from '@/lib/providers/subscription-modal-provider';
-import React, { useState } from 'react';
+import { useSubscriptionModal } from "@/lib/providers/subscription-modal-provider";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog';
-import { useSupabaseUser } from '@/lib/providers/supabase-user-provider';
-import { formatPrice, postData } from '@/lib/utils';
-import { Button } from '../ui/button';
-import Loader from './Loader';
-import { Price, ProductWithPrice } from '@/lib/supabase/supabase.types';
-import { useToast } from '../ui/use-toast';
-import { getStripe } from '@/lib/stripe/stripeClient';
-import { useRouter } from 'next/navigation';
+} from "../ui/dialog";
+import { useSupabaseUser } from "@/lib/providers/supabase-user-provider";
+import { formatPrice, postData } from "@/lib/utils";
+import { Button } from "../ui/button";
+import Loader from "./Loader";
+import { Price, ProductWithPrice } from "@/lib/supabase/supabase.types";
+import { useToast } from "../ui/use-toast";
+import { getStripe } from "@/lib/stripe/stripeClient";
+import { useRouter } from "next/navigation";
 
 interface SubscriptionModalProps {
   products: ProductWithPrice[];
@@ -34,41 +34,38 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ products }) => {
     try {
       setIsLoading(true);
       if (!user) {
-        toast({ title: 'You must be logged in' });
+        toast({ title: "You must be logged in" });
         setIsLoading(false);
-        router.push("/login")
+        router.push("/login");
         return;
       }
       if (subscription) {
-        toast({ title: 'Already on a paid plan' });
+        toast({ title: "Already on a paid plan" });
         setIsLoading(false);
         return;
       }
       const { sessionId } = await postData({
-        url: '/api/create-checkout-session',
+        url: "/api/create-checkout-session",
         data: { price },
       });
 
       const stripe = await getStripe();
       stripe?.redirectToCheckout({ sessionId });
     } catch (error) {
-      toast({ title: 'Oppse! Something went wrong.', variant: 'destructive' });
+      toast({ title: "Oppse! Something went wrong.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={setOpen}
-    >
-      {subscription?.status === 'active' ? (
-        <DialogContent>Already on a paid plan!</DialogContent>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {subscription?.status === "active" ? (
+        <DialogContent>Already on Pro Plan!</DialogContent>
       ) : (
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upgrade to a Pro Plan</DialogTitle>
+            <DialogTitle>Upgrade to Pro Plan</DialogTitle>
           </DialogHeader>
           <DialogDescription>
             To access Pro features you need to have a paid plan.
@@ -92,13 +89,13 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ products }) => {
                         onClick={() => onClickContinue(price)}
                         disabled={isLoading}
                       >
-                        {isLoading ? <Loader /> : 'Upgrade ✨'}
+                        {isLoading ? <Loader /> : "Upgrade ✨"}
                       </Button>
                     </React.Fragment>
                   ))}
                 </div>
               ))
-            : ''}
+            : ""}
           {/* No Products Available */}
         </DialogContent>
       )}

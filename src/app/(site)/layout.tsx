@@ -5,7 +5,7 @@ import React from "react";
 
 const HomePageLayout = async ({ children }: { children: React.ReactNode }) => {
   const { data: products, error } = await getActiveProductsWithPrice();
-  if (error) throw new Error(`${error}`);
+  if (error) console.log(`${error}`);
   return (
     <main>
       <Header />

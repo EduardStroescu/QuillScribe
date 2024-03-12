@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { workspace } from '@/lib/supabase/supabase.types';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import Image from 'next/image';
-import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
+import { workspace } from "@/lib/supabase/supabase.types";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import Image from "next/image";
+import Link from "next/link";
+import React, { useEffect, useState } from "react";
 
 interface SelectedWorkspaceProps {
   workspace: workspace;
@@ -16,16 +16,16 @@ const SelectedWorkspace: React.FC<SelectedWorkspaceProps> = ({
   onClick,
 }) => {
   const supabase = createClientComponentClient();
-  const [workspaceLogo, setWorkspaceLogo] = useState('/quillScribeLogo.svg');
+  const [workspaceLogo, setWorkspaceLogo] = useState("/quillScribeLogo.svg");
   useEffect(() => {
     if (workspace.logo) {
       const path = supabase.storage
-        .from('workspace-logos')
+        .from("workspace-logos")
         .getPublicUrl(workspace.logo)?.data.publicUrl;
       setWorkspaceLogo(path);
     }
-  }, [workspace]);
-  
+  }, [workspace, supabase]);
+
   return (
     <Link
       href={`/dashboard/${workspace.id}`}
@@ -50,7 +50,7 @@ const SelectedWorkspace: React.FC<SelectedWorkspaceProps> = ({
         alt="workspace logo"
         width={20}
         height={20}
-        style={{objectFit: "cover", width: "auto", height: "auto"}}
+        style={{ objectFit: "cover", width: "auto", height: "auto" }}
       />
       <div className="flex flex-col">
         <p
