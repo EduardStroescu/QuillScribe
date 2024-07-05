@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="https://quillscribe-eduard-stroescu.koyeb.app/" target="blank"><img src="https://raw.githubusercontent.com/EduardStroescu/PubImages/main/WebsiteImages/quillScribe.jpg" alt="QuillScribe Preview" /></a>
+</p>
+
 # QuillScribe
 
 ## Introduction
