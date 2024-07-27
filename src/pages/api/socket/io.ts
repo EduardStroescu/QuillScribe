@@ -16,7 +16,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIo) => {
     const io = new ServerIO(httpServer, {
       path,
       addTrailingSlash: false,
-    }).listen(3000);
+    });
 
     io.on("connection", (socket) => {
       socket.on("create-room", (fileId) => {
@@ -30,16 +30,12 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIo) => {
       });
     });
     res.socket.server.io = io;
-    res
-      .status(201)
-      .json({ success: true, message: "Socket is started", socket: `:3000` });
+    res.status(201).json({ success: true, message: "Socket is started" });
   }
   res.status(200).json({
     success: true,
     message: "Socket is already running",
-    socket: `:3000`,
   });
-  return;
 };
 
 export default ioHandler;

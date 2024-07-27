@@ -22,6 +22,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    const fetchSocket = async () => {
+      await fetch("/api/socket/io");
+    };
+    fetchSocket();
+
     const socketInstance = new (ClientIO as any)(
       process.env.NEXT_PUBLIC_SITE_URL!,
       {
@@ -38,8 +43,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       setIsConnected(false);
     });
 
-    socketInstance.on("connect_error", async () => {
-      await fetch("/api/socket/io");
+    socketInstance.on("connect_error", () => {
+      fetchSocket();
     });
 
     setSocket(socketInstance);
