@@ -23,7 +23,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const fetchSocket = async () => {
-      await fetch("/api/socket/io");
+      try {
+        await fetch("/api/socket/io");
+      } catch (err) {
+        // Do nothing, call made just to start the socket
+      }
     };
     fetchSocket();
 

@@ -2,7 +2,7 @@
 
 import { useAppState } from "@/lib/providers/state-provider";
 import { Folder } from "@/lib/supabase/supabase.types";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TooltipComponent from "../global/tooltip-component";
 import { PlusIcon } from "lucide-react";
 import { useSupabaseUser } from "@/lib/providers/supabase-user-provider";
@@ -26,10 +26,17 @@ const FoldersDropdownList: React.FC<FoldersDropdownListProps> = ({
 }) => {
   useSupabaseRealtime();
   const { state, dispatch, folderId } = useAppState();
-  const { open, setOpen } = useSubscriptionModal();
+  const { setOpen } = useSubscriptionModal();
   const { toast } = useToast();
   const [folders, setFolders] = useState<Folder[]>([]);
   const { subscription } = useSupabaseUser();
+
+  const stateRef = useRef(state);
+
+  // Keep ref updated with the latest state
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   //Sync initial server state with the app state
   useEffect(() => {
@@ -40,12 +47,14 @@ const FoldersDropdownList: React.FC<FoldersDropdownListProps> = ({
           workspaceId,
           folders: workspaceFolders.map((folder) => ({
             ...folder,
-            files: findFolderById(state, workspaceId, folder.id)?.files || [],
+            files:
+              findFolderById(stateRef.current, workspaceId, folder.id)?.files ||
+              [],
           })),
         },
       });
     }
-  }, [workspaceFolders, workspaceId]);
+  }, [workspaceFolders, workspaceId, dispatch]);
 
   useEffect(() => {
     setFolders(findWorkspaceById(state, workspaceId)?.folders || []);

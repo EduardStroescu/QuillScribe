@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-const Layout: React.FC<LayoutProps> = async ({ children, params }) => {
-  const { data: products, error } = await getActiveProductsWithPrice();
-  if (error) console.log(`${error}`);
+const Layout: React.FC<LayoutProps> = async ({ children }) => {
+  const { data: products } = await getActiveProductsWithPrice();
+
   return (
     <main className="flex over-hidden h-screen">
       <SubscriptionModalProvider products={products}>

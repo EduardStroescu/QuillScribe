@@ -7,7 +7,6 @@ import {
   integer,
   boolean,
   timestamp,
-  foreignKey,
   bigint,
 } from "drizzle-orm/pg-core";
 

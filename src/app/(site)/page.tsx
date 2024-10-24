@@ -73,9 +73,11 @@ const HomePage = () => {
         >
           <Image
             src={Banner}
+            priority
             alt="Application Banner"
             loading="eager"
             className="object-contain"
+            placeholder="empty"
           />
           <div
             className="bottom-0
@@ -119,7 +121,7 @@ const HomePage = () => {
           before:absolute
         "
         >
-          {[...Array(2)].map((_, index) => (
+          {[...Array(2)].map(() => (
             <div
               key={randomUUID()}
               className="flex
@@ -143,6 +145,7 @@ const HomePage = () => {
                     alt={client.alt}
                     width={200}
                     height={200}
+                    placeholder="blur"
                     className="object-contain max-w-none"
                     style={{ width: "auto" }}
                   />
@@ -190,9 +193,10 @@ const HomePage = () => {
           border-8
           border-washed-purple-300 
           border-opacity-10
+          overflow-clip
         "
         >
-          <Image src={Cal} alt="Banner" className="rounded-2xl" />
+          <Image src={Cal} alt="Banner" placeholder="blur" />
         </div>
       </section>
       <section className="relative">

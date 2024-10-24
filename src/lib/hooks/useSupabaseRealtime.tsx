@@ -227,9 +227,7 @@ const useSupabaseRealtime = () => {
       folderSubscribe.unsubscribe();
       workspaceSubscribe.unsubscribe();
     };
-  }, [supabase, state, selectedWorskpace]);
-
-  return null;
+  }, [supabase, state, selectedWorskpace, dispatch, router]);
 };
 
 export default useSupabaseRealtime;

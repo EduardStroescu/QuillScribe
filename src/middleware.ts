@@ -6,11 +6,11 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient<Database>({ req, res });
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (req.nextUrl.pathname.startsWith("/dashboard")) {
-    if (!session) {
+    if (!user) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }
@@ -32,7 +32,7 @@ export async function middleware(req: NextRequest) {
   }
 
   if (["/login", "/signup"].includes(req.nextUrl.pathname)) {
-    if (session) {
+    if (user) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
   }
