@@ -10,11 +10,13 @@ import { usePathname } from "next/navigation";
 
 type SupabaseUserContextType = {
   user: AuthUser | null;
+  setUser: React.Dispatch<React.SetStateAction<AuthUser | null>>;
   subscription: Subscription | null;
 };
 
 const SupabaseUserContext = createContext<SupabaseUserContextType>({
   user: null,
+  setUser: () => {},
   subscription: null,
 });
 
@@ -67,7 +69,7 @@ export const SupabaseUserProvider: React.FC<SupabaseUserProviderProps> = ({
   }, [pathname, user, supabase, toast]);
 
   return (
-    <SupabaseUserContext.Provider value={{ user, subscription }}>
+    <SupabaseUserContext.Provider value={{ user, setUser, subscription }}>
       {children}
     </SupabaseUserContext.Provider>
   );

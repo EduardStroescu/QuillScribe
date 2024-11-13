@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import React from "react";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
+import { useSupabaseUser } from "@/lib/providers/supabase-user-provider";
 
 interface LogoutButtonProps {
   children: React.ReactNode;
@@ -14,13 +15,16 @@ interface LogoutButtonProps {
 
 const LogoutButton: React.FC<LogoutButtonProps> = ({ children, className }) => {
   const { dispatch } = useAppState();
+  const { setUser } = useSupabaseUser();
   const router = useRouter();
   const supabase = createClientComponentClient();
   const logout = async () => {
     await supabase.auth.signOut();
-    router.refresh();
     dispatch({ type: "SET_WORKSPACES", payload: { workspaces: [] } });
+    setUser(null);
+    router.refresh();
   };
+
   return (
     <Button
       variant="ghost"

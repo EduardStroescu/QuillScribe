@@ -10,6 +10,7 @@ import { useSocket } from "../providers/socket-provider";
 import { useAppState } from "../providers/state-provider";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Folder, workspace } from "../supabase/supabase.types";
+import { generateRandomHexColor } from "../utils";
 
 interface useRealtimeQuillProps {
   quill: any;
@@ -35,7 +36,13 @@ export function useRealtimeQuill({
     { id: string; email: string; avatarUrl: string }[]
   >([]);
 
-  // Send cursor move
+  // Connect to Socket.io Rooms
+  useEffect(() => {
+    if (socket === null || quill === null || !fileId) return;
+    socket.emit("create-room", fileId);
+  }, [socket, quill, fileId]);
+
+  // Receive cursor position
   useEffect(() => {
     if (quill === null || socket === null || !fileId || !localCursors.length)
       return;
@@ -54,12 +61,6 @@ export function useRealtimeQuill({
       socket.off("receive-cursor-move", socketHandler);
     };
   }, [quill, socket, fileId, localCursors]);
-
-  //Connect to Socket.io Rooms
-  useEffect(() => {
-    if (socket === null || quill === null || !fileId) return;
-    socket.emit("create-room", fileId);
-  }, [socket, quill, fileId]);
 
   //Send quill changes to all clients
   useEffect(() => {
@@ -172,7 +173,7 @@ export function useRealtimeQuill({
                 userCursor.createCursor(
                   collaborator.id,
                   collaborator.email.split("@")[0],
-                  `#${Math.random().toString(16).slice(2, 8)}`
+                  generateRandomHexColor()
                 );
                 allCursors.push(userCursor);
               }

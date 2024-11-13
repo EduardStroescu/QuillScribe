@@ -137,7 +137,6 @@ const SettingsForm = () => {
     const { data, error } = await supabase.storage
       .from("workspace-logos")
       .upload(`workspaceLogo.${uuid}`, file, {
-        cacheControl: "3600",
         upsert: true,
       });
 
@@ -166,7 +165,6 @@ const SettingsForm = () => {
     const { data, error } = await supabase.storage
       .from("avatars")
       .upload(`avatar.${user.id}?v=${uuid}`, file, {
-        cacheControl: "3600",
         upsert: true,
       });
     if (!error) {

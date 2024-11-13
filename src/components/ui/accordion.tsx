@@ -36,7 +36,7 @@ const AccordionTrigger = React.forwardRef<
       {...props}
     >
       {!disabled && (
-        <TooltipComponent message="Show More">
+        <TooltipComponent asChild message="Show More">
           <ChevronDown className="hover:dark:text-white dark:text-Neutrals/neutrals-9 h-5 w-5 shrink-0 transition-all duration-200" />
         </TooltipComponent>
       )}

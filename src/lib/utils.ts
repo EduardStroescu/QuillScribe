@@ -77,3 +77,17 @@ export const findFileById = (
     ?.folders.find((folder) => folder.id === folderId)
     ?.files.find((file) => file.id === fileId);
 };
+
+export const generateRandomHexColor = () => {
+  // Generate three random values for R, G, B within a range that produces darker colors
+  const r = Math.floor(Math.random() * 200); // values from 0 to 127
+  const g = Math.floor(Math.random() * 200); // values from 0 to 127
+  const b = Math.floor(Math.random() * 200); // values from 0 to 127
+
+  // Convert each color to a hex string and pad with '0' if necessary
+  const hexColor = `#${r.toString(16).padStart(2, "0")}${g
+    .toString(16)
+    .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+
+  return hexColor;
+};
