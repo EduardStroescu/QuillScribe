@@ -7,6 +7,8 @@ import SelectedWorkspace from "./selected-workspace";
 import CustomDialogTrigger from "../global/custom-dialog-trigger";
 import WorkspaceCreator from "../global/workspace-creator";
 import { findWorkspaceById } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import Link from "next/link";
 
 interface WorkspaceDropdownProps {
   privateWorkspaces: workspace[] | [];
@@ -49,24 +51,16 @@ const WorkspaceDropdown: React.FC<WorkspaceDropdownProps> = ({
   }, [state, defaultValue]);
 
   return (
-    <div
-      className=" relative inline-block
-      text-left
-  "
-    >
-      <div>
-        <span onClick={() => setIsOpen(!isOpen)}>
-          {selectedOption ? (
-            <SelectedWorkspace workspace={selectedOption} />
-          ) : (
-            "Select a workspace"
-          )}
-        </span>
-      </div>
-      {isOpen && (
-        <div
-          className="origin-top-right
-          absolute
+    <Popover>
+      <PopoverTrigger className="text-left">
+        {selectedOption ? (
+          <SelectedWorkspace workspace={selectedOption} />
+        ) : (
+          "Select a workspace"
+        )}
+      </PopoverTrigger>
+      <PopoverContent
+        className="
           w-full
           rounded-md
           shadow-md
@@ -79,57 +73,62 @@ const WorkspaceDropdown: React.FC<WorkspaceDropdownProps> = ({
           overflow-x-hidden
           border-[1px]
           border-muted
+          px-0 py-2
       "
-        >
-          <div className="rounded-md flex flex-col">
-            <div className="!p-2">
-              {!!privateWorkspaces.length && (
-                <>
-                  <p className="text-muted-foreground">Private</p>
-                  <hr></hr>
-                  {privateWorkspaces.map((option) => (
-                    <SelectedWorkspace
-                      key={option.id}
-                      workspace={option}
-                      onClick={handleSelect}
-                    />
-                  ))}
-                </>
-              )}
-              {!!sharedWorkspaces.length && (
-                <>
-                  <p className="text-muted-foreground">Shared</p>
-                  <hr />
-                  {sharedWorkspaces.map((option) => (
-                    <SelectedWorkspace
-                      key={option.id}
-                      workspace={option}
-                      onClick={handleSelect}
-                    />
-                  ))}
-                </>
-              )}
-              {!!collaboratingWorkspaces.length && (
-                <>
-                  <p className="text-muted-foreground">Collaborating</p>
-                  <hr />
-                  {collaboratingWorkspaces.map((option) => (
-                    <SelectedWorkspace
-                      key={option.id}
-                      workspace={option}
-                      onClick={handleSelect}
-                    />
-                  ))}
-                </>
-              )}
-            </div>
-            <CustomDialogTrigger
-              header="Create A Workspace"
-              content={<WorkspaceCreator />}
-              description="Workspaces give you the power to collaborate with others. You can change your workspace privacy settings after creating the workspace too."
-            >
-              <div
-                className="flex 
+      >
+        <div className="rounded-md flex flex-col px-2">
+          {!!privateWorkspaces.length && (
+            <>
+              <p className="text-muted-foreground">Private</p>
+              <hr></hr>
+              {privateWorkspaces.map((option) => (
+                <Link
+                  key={option.id}
+                  href={`/dashboard/${option.id}`}
+                  onClick={() => handleSelect(option)}
+                >
+                  <SelectedWorkspace workspace={option} />
+                </Link>
+              ))}
+            </>
+          )}
+          {!!sharedWorkspaces.length && (
+            <>
+              <p className="text-muted-foreground">Shared</p>
+              <hr />
+              {sharedWorkspaces.map((option) => (
+                <Link
+                  key={option.id}
+                  href={`/dashboard/${option.id}`}
+                  onClick={() => handleSelect(option)}
+                >
+                  <SelectedWorkspace workspace={option} />
+                </Link>
+              ))}
+            </>
+          )}
+          {!!collaboratingWorkspaces.length && (
+            <>
+              <p className="text-muted-foreground">Collaborating</p>
+              <hr />
+              {collaboratingWorkspaces.map((option) => (
+                <Link
+                  key={option.id}
+                  href={`/dashboard/${option.id}`}
+                  onClick={() => handleSelect(option)}
+                >
+                  <SelectedWorkspace workspace={option} />
+                </Link>
+              ))}
+            </>
+          )}
+          <CustomDialogTrigger
+            header="Create A Workspace"
+            content={<WorkspaceCreator />}
+            description="Workspaces give you the power to collaborate with others. You can change your workspace privacy settings after creating the workspace too."
+          >
+            <div
+              className="flex 
               transition-all 
               hover:bg-muted 
               justify-center 
@@ -137,9 +136,9 @@ const WorkspaceDropdown: React.FC<WorkspaceDropdownProps> = ({
               gap-2 
               p-2 
               w-full"
-              >
-                <article
-                  className="text-slate-500 
+            >
+              <article
+                className="text-slate-500 
                 rounded-full
                  bg-slate-800 
                  w-4 
@@ -147,16 +146,15 @@ const WorkspaceDropdown: React.FC<WorkspaceDropdownProps> = ({
                  flex 
                  items-center 
                  justify-center"
-                >
-                  +
-                </article>
-                Create workspace
-              </div>
-            </CustomDialogTrigger>
-          </div>
+              >
+                +
+              </article>
+              Create workspace
+            </div>
+          </CustomDialogTrigger>
         </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 

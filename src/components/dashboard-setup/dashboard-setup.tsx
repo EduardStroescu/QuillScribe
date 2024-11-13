@@ -161,6 +161,7 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
                   {...register("workspaceName", {
                     required: "Workspace name is required",
                   })}
+                  spellCheck={false}
                 />
                 <small className="text-red-600">
                   {errors?.workspaceName?.message?.toString()}

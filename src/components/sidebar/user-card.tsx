@@ -72,8 +72,8 @@ const UserCard: React.FC<UserCardProps> = async ({ subscription }) => {
           </small>
         </div>
       </aside>
-      <div className="flex items-center justify-center">
-        <LogoutButton>
+      <div className="flex items-center justify-center gap-1">
+        <LogoutButton className="text-primary-foreground hover:text-foreground dark:text-inherit hover:dark:text-accent-foreground">
           <LogOut />
         </LogoutButton>
         <ModeToggle />

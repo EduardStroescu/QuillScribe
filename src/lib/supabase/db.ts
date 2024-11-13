@@ -29,7 +29,7 @@ const globalForDrizzle = globalThis as unknown as {
 };
 
 // In development, use the same drizzle instance globally to prevent creating multiple connections
-const db = globalForDrizzle.drizzle ?? drizzleDb;
+const db = globalForDrizzle.drizzle || drizzleDb;
 
 if (process.env.NODE_ENV !== "production") globalForDrizzle.drizzle = drizzleDb;
 

@@ -5,6 +5,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
 
 interface LogoutButtonProps {
   children: React.ReactNode;
@@ -24,7 +25,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({ children, className }) => {
     <Button
       variant="ghost"
       size="icon"
-      className={`${className} p-0`}
+      className={cn("p-0", className)}
       onClick={logout}
     >
       {children}

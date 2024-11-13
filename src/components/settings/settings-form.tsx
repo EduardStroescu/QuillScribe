@@ -247,6 +247,7 @@ const SettingsForm = () => {
           value={workspaceDetails ? workspaceDetails.title : ""}
           placeholder="Workspace Name"
           onChange={workspaceNameChange}
+          spellCheck={false}
         />
         <Label
           htmlFor="workspaceLogo"
@@ -316,12 +317,12 @@ const SettingsForm = () => {
                 addCollaborator(user);
               }}
             >
-              <div className="inline-flex items-center justify-center font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 whitespace-nowrap bg-primary text-primary-foreground shadow-2xl shadow-indigo-600/50 rounded-lg text-sm mt-4">
+              <div className="inline-flex items-center justify-center font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 whitespace-nowrap bg-primary text-primary-foreground shadow-2xl shadow-indigo-600/50 rounded-lg text-sm my-4">
                 <Plus />
                 Add Collaborators
               </div>
             </CollaboratorSearch>
-            <div className="mt-4">
+            <div className="mt-2">
               <span className="text-sm text-muted-foreground">
                 Collaborators {collaborators.length || ""}
               </span>
@@ -460,10 +461,12 @@ const SettingsForm = () => {
           </div>
         </div>
         <div className="flex flex-row items-center">
-          <LogoutButton className={"flex flex-row gap-2 items-center w-full"}>
-            <div className="flex justify-center">
-              <LogOut />
-            </div>
+          <LogoutButton
+            className={
+              "flex flex-row gap-2 items-center min-w-fit px-4 mx-auto"
+            }
+          >
+            <LogOut />
             <p>Log Out</p>
           </LogoutButton>
         </div>
@@ -472,7 +475,7 @@ const SettingsForm = () => {
         </p>
         <Separator />
         <p className="text-muted-foreground">
-          You are currently on a{" "}
+          You are currently on the{" "}
           {subscription?.status === "active" ? "Pro" : "Free"} Plan
         </p>
         <Link

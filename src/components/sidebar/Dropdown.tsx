@@ -265,7 +265,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   };
 
   const isFolder = listType === "folder";
-  const groupIdentifies = clsx(
+  const groupIdentities = clsx(
     "dark:text-white whitespace-nowrap flex justify-between items-center w-full relative",
     {
       "group/folder": isFolder,
@@ -285,10 +285,10 @@ const Dropdown: React.FC<DropdownProps> = ({
   const hoverStyles = useMemo(
     () =>
       clsx(
-        "h-full hidden rounded-sm absolute right-0 items-center justify-center",
+        "flex h-full gap-1.5 hidden rounded-sm absolute right-0 items-center justify-center",
         {
-          "group-hover/file:block": listType === "file",
-          "group-hover/folder:block": listType === "folder",
+          "group-hover/file:flex": listType === "file",
+          "group-hover/folder:flex": listType === "folder",
         }
       ),
     [listType]
@@ -343,10 +343,10 @@ const Dropdown: React.FC<DropdownProps> = ({
         text-sm"
         disabled={listType === "file"}
       >
-        <div className={groupIdentifies}>
+        <div className={groupIdentities}>
           <div
             className="flex 
-          gap-4 
+          gap-2 
           items-center 
           justify-center 
           overflow-hidden"
@@ -358,7 +358,7 @@ const Dropdown: React.FC<DropdownProps> = ({
               type="text"
               value={listType === "folder" ? folderTitle : fileTitle}
               className={clsx(
-                "outline-none overflow-hidden w-[140px] text-Neutrals/neutrals-7",
+                "outline-none overflow-hidden w-[140px] text-Neutrals/neutrals-9 hover:text-inherit",
                 {
                   "bg-muted cursor-text": isEditing,
                   "bg-transparent cursor-pointer": !isEditing,
@@ -377,7 +377,7 @@ const Dropdown: React.FC<DropdownProps> = ({
               <Trash
                 onClick={moveToTrash}
                 size={15}
-                className="hover:dark:text-white dark:text-Neutrals/neutrals-7 transition-colors"
+                className="hover:dark:text-white dark:text-Neutrals/neutrals-9 transition-colors"
               />
             </TooltipComponent>
             {listType === "folder" && !isEditing && (
@@ -385,7 +385,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                 <PlusIcon
                   onClick={addNewFile}
                   size={15}
-                  className="hover:dark:text-white dark:text-Neutrals/neutrals-7 transition-colors"
+                  className="hover:dark:text-white dark:text-Neutrals/neutrals-9 transition-colors"
                 />
               </TooltipComponent>
             )}

@@ -3,18 +3,13 @@
 import { workspace } from "@/lib/supabase/supabase.types";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import Image from "next/image";
-import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
 interface SelectedWorkspaceProps {
   workspace: workspace;
-  onClick?: (option: workspace) => void;
 }
 
-const SelectedWorkspace: React.FC<SelectedWorkspaceProps> = ({
-  workspace,
-  onClick,
-}) => {
+const SelectedWorkspace: React.FC<SelectedWorkspaceProps> = ({ workspace }) => {
   const supabase = createClientComponentClient();
   const [workspaceLogo, setWorkspaceLogo] = useState("/quillScribeLogo.svg");
   useEffect(() => {
@@ -27,11 +22,7 @@ const SelectedWorkspace: React.FC<SelectedWorkspaceProps> = ({
   }, [workspace, supabase]);
 
   return (
-    <Link
-      href={`/dashboard/${workspace.id}`}
-      onClick={() => {
-        if (onClick) onClick(workspace);
-      }}
+    <div
       className="flex 
       rounded-md 
       hover:bg-muted 
@@ -63,7 +54,7 @@ const SelectedWorkspace: React.FC<SelectedWorkspaceProps> = ({
           {workspace.title}
         </p>
       </div>
-    </Link>
+    </div>
   );
 };
 
