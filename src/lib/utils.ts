@@ -79,12 +79,21 @@ export const findFileById = (
 };
 
 export const generateRandomHexColor = () => {
-  // Generate three random values for R, G, B within a range that produces darker colors
-  const r = Math.floor(Math.random() * 200); // values from 0 to 127
-  const g = Math.floor(Math.random() * 200); // values from 0 to 127
-  const b = Math.floor(Math.random() * 200); // values from 0 to 127
+  const dominant = Math.floor(Math.random() * 3); // Choose dominant channel (0 = red, 1 = green, 2 = blue)
 
-  // Convert each color to a hex string and pad with '0' if necessary
+  const r =
+    dominant === 0
+      ? Math.floor(Math.random() * 201)
+      : Math.floor(Math.random() * 101);
+  const g =
+    dominant === 1
+      ? Math.floor(Math.random() * 201)
+      : Math.floor(Math.random() * 101);
+  const b =
+    dominant === 2
+      ? Math.floor(Math.random() * 201)
+      : Math.floor(Math.random() * 101);
+
   const hexColor = `#${r.toString(16).padStart(2, "0")}${g
     .toString(16)
     .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;

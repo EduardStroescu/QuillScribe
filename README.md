@@ -66,7 +66,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SERVICE_ROLE_KEY=
 PW=
 
-NEXT_PUBLIC_SITE_URL= http://localhost:3000/ || Live Url
+NEXT_PUBLIC_SITE_URL= http://localhost:3000 || Live Url
+NEXT_PUBLIC_SOCKET_URL= http://localhost:3333 || Separate Websocket backend
 
 _Provided by Stripe_
 
