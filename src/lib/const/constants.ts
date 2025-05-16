@@ -16,17 +16,17 @@ export const USERS = [
   {
     name: "Alice",
     message:
-      "QuillScribe has been a game-changer for our team. With its reliable end-to-end testing, we catch bugs early, leading to faster development cycles and improved collaboration.",
+      "Gone are the days of messy Google Docs and email threads. With QuillScribe, my co-writers and I stay on the same page—literally. It’s like Google Docs, but made specifically for serious writers.",
   },
   {
     name: "Bob",
     message:
-      "I used to spend hours debugging frontend issues, but QuillScribe simplified everything. Now, I'm more productive, and my colleagues can trust our code thanks to QuillScribe.",
+      "Writing used to feel like a solo effort. Now, brainstorming, drafting, and editing with my team all happens in one smooth flow. QuillScribe makes collaboration feel effortless.",
   },
   {
     name: "Charlie",
     message:
-      "QuillScribe has transformed the way we work. Our QA and development teams are on the same page, and our productivity has skyrocketed. It's a must-have tool.",
+      "We co-author weekly thought leadership pieces, and QuillScribe helps us stay organized, creative, and in sync. It’s like a shared brain for writing teams.",
   },
   {
     name: "David",
@@ -36,72 +36,72 @@ export const USERS = [
   {
     name: "Ella",
     message:
-      "QuillScribe made writing and running tests a breeze. Our team's productivity has never been higher, and we're delivering more reliable software.",
+      "Our agency handles multiple writing projects daily. With QuillScribe, we can assign sections, leave inline feedback, and publish drafts faster. It's now a core part of our writing workflow.",
   },
   {
     name: "Frank",
     message:
-      "Thanks to QuillScribe, we've eliminated testing bottlenecks. Our developers and testers collaborate effortlessly, resulting in quicker releases.",
+      "The live collaboration feature is a game-changer. Whether it’s revising blog posts or creating marketing copy, everyone can contribute without waiting for their turn.",
   },
   {
     name: "Grace",
     message:
-      "QuillScribe has improved our development process significantly. We now have more time for innovation, and our products are of higher quality.",
+      "I never knew collaborative writing could feel this intuitive. QuillScribe brings together structure and creativity in a way no other tool has.",
   },
   {
     name: "Hank",
     message:
-      "QuillScribe's user-friendly interface made it easy for our non-technical team members to contribute to testing. Our workflow is much more efficient now.",
+      "QuillScribe is like having a virtual writing room with my team. No distractions, no clutter—just clean, focused collaboration.",
   },
   {
     name: "Ivy",
     message:
-      "Our team's collaboration improved immensely with QuillScribe. We catch issues early, leading to less friction and quicker feature deployments.",
+      "As a novelist co-writing a book across time zones, I needed something more powerful than just chat and docs. QuillScribe keeps our story in sync and our ideas flowing.",
   },
   {
     name: "Jack",
     message:
-      "QuillScribe's robust testing capabilities have elevated our development standards. We work more harmoniously, and our releases are more reliable.",
+      "I’ve tried a dozen writing platforms, but none feel as fluid and focused as QuillScribe. It’s like Scrivener met Figma for writers.",
   },
   {
     name: "Katherine",
     message:
-      "QuillScribe is a lifesaver for our cross-functional teams. We're more productive, and there's a shared sense of responsibility for product quality.",
+      "We create content with contributors across three continents. With QuillScribe, it just works—no version conflicts, no delays. Just smooth collaboration.",
   },
   {
     name: "Liam",
     message:
-      "QuillScribe has helped us maintain high standards of quality. Our team's collaboration has improved, resulting in faster development cycles.",
+      "I love how clean and distraction-free the writing interface is. QuillScribe helps me stay focused without sacrificing the power tools I need.",
   },
   {
     name: "Mia",
     message:
-      "QuillScribe is a powerful tool that improved our productivity and collaboration. It's now an integral part of our development process.",
+      "Our team is fully remote, and async collaboration is key. QuillScribe keeps everything fluid—whether we’re brainstorming or polishing a final draft.",
   },
   {
     name: "Nathan",
     message:
-      "QuillScribe's user-friendly interface and detailed reporting have made testing a breeze. Our team's productivity is at an all-time high.",
+      "QuillScribe's user-friendly interface has made composing a breeze. Our team's productivity is at an all-time high.",
   },
   {
     name: "Olivia",
     message:
-      "We saw immediate benefits in terms of productivity and collaboration after adopting QuillScribe. It's an essential tool for our development workflow.",
+      "Honestly? QuillScribe just gets out of the way so we can write. It feels like we’re in the same room, even when we’re not.",
   },
   {
     name: "Paul",
     message:
-      "QuillScribe has streamlined our testing process and brought our teams closer. We're more efficient and deliver better results.",
+      "What I love most is the sense of momentum. You see your teammate's cursor moving, comments popping up, edits happening live—it makes writing feel alive.",
   },
   {
     name: "Quinn",
     message:
-      "QuillScribe has been a game-changer for us. Our productivity and collaboration have improved significantly, leading to better software.",
+      "Collaborative writing used to feel clunky. With QuillScribe, it feels natural—like pair programming but for words.",
   },
   {
     name: "Rachel",
     message:
-      "Thanks to QuillScribe, our testing process is now a seamless part of our development cycle. Our teams collaborate effortlessly.",
+      "We host writing sprints with dozens of contributors, and QuillScribe handles the chaos beautifully. No lags, no confusion, just fast-paced, focused collaboration.",
   },
   {
     name: "Sam",

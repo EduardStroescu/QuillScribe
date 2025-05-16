@@ -23,7 +23,7 @@ const PricingCards = () => {
         <CustomCard
           key={card.planType}
           className={clsx(
-            "w-[300px] rounded-2xl dark:bg-black/40 background-blur-3xl relative",
+            "w-[300px] rounded-2xl bg-black/40 background-blur-3xl relative border-[#282637]",
             {
               "border-brand-primaryPurple/70":
                 card.planType === PRICING_PLANS.proplan,
@@ -31,17 +31,22 @@ const PricingCards = () => {
           )}
           cardHeader={
             <CardTitle
-              className="text-2xl
+              className={`${
+                card.planType === PRICING_PLANS.proplan
+                  ? "text-primary"
+                  : "text-[#f9fafb]"
+              } text-2xl
                   font-semibold
-              "
+              `}
             >
               {card.planType === PRICING_PLANS.proplan && (
                 <>
                   <div
                     className="hidden dark:block w-full blur-[120px] rounded-full h-32
                         absolute
+                        -z-1
                         bg-brand-primaryPurple/80
-                        -z-10
+                        animate-pulse
                         top-0
                       "
                   />
@@ -59,17 +64,17 @@ const PricingCards = () => {
             <CardContent className="p-0">
               <span
                 className="font-normal 
-                    text-2xl
+                    text-2xl text-[#f9fafb]
                 "
               >
                 ${card.price}
               </span>
               {+card.price > 0 ? (
-                <span className="dark:text-washed-purple-800 ml-1">/mo</span>
+                <span className="text-washed-purple-800 ml-1">/mo</span>
               ) : (
                 ""
               )}
-              <p className="dark:text-washed-purple-800">{card.description}</p>
+              <p className="text-washed-purple-800">{card.description}</p>
               <Button
                 variant="btn-primary"
                 className="whitespace-nowrap w-full mt-4 mb-4"
@@ -83,7 +88,7 @@ const PricingCards = () => {
                   ? "Go Pro"
                   : "Get Started"}
               </Button>
-              <small>{card.highlightFeature}</small>
+              <small className="text-[#f9fafb]">{card.highlightFeature}</small>
             </CardContent>
           }
           cardFooter={
@@ -93,6 +98,7 @@ const PricingCards = () => {
                   mb-2
                   flex-col
                   gap-4
+                  text-[#817eb5]
                 "
             >
               {card.freatures.map((feature) => (

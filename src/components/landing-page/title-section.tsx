@@ -20,22 +20,23 @@ const TitleSection: React.FC<TitleSectionProps> = ({
         justify-center
         items-start
         md:items-center
+        
       "
       >
         <article
           className="rounded-full
           p-[1px]
           text-sm
-          dark:bg-gradient-to-r
-          dark:from-brand-primaryBlue
-          dark:to-brand-primaryPurple
+          bg-gradient-to-r
+          from-brand-primaryBlue
+          to-brand-primaryPurple
         "
         >
           <div
             className="rounded-full 
             px-3
             py-1
-            dark:bg-black"
+            bg-[#030014] text-[#cac2ff]"
           >
             {pill}
           </div>
@@ -49,12 +50,13 @@ const TitleSection: React.FC<TitleSectionProps> = ({
               sm:max-w-[750px]
               md:text-center
               font-semibold
+              text-[#cac2ff]
             "
             >
               {title}
             </h2>
             <p
-              className="dark:text-washed-purple-700 sm:max-w-[450px]
+              className="text-washed-purple-700 sm:max-w-[450px]
               md:text-center
             "
             >
@@ -69,6 +71,7 @@ const TitleSection: React.FC<TitleSectionProps> = ({
             sm:max-w-[850px]
             md:text-center
             font-semibold
+            text-[#cac2ff]
           "
           >
             {title}

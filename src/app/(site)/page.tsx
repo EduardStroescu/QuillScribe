@@ -5,20 +5,22 @@ import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
 
 import TitleSection from "@/components/landing-page/title-section";
-import Banner from "../../../public/appBanner.png";
-import Cal from "../../../public/cal.png";
 import { CLIENTS, USERS } from "@/lib/const/constants";
 import CustomCard from "@/components/landing-page/custom-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CardDescription, CardTitle } from "@/components/ui/card";
+import { CardTitle } from "@/components/ui/card";
 import PricingCards from "@/components/landing-page/pricing-cards";
 import { randomUUID } from "crypto";
+import { Background } from "./background";
+import Banner from "../../../public/appBanner.png";
+import Cal from "../../../public/cal.png";
 
 const HomePage = () => {
   return (
     <>
+      <Background />
       <section
-        className=" overflow-hidden
+        className="overflow-hidden
       px-4
       sm:px-6
       mt-10
@@ -52,42 +54,45 @@ const HomePage = () => {
             rounded-[10px]
             text-2xl
             px-4 py-2
-            bg-background 
-            text-secondary-foreground 
-            hover:bg-secondary/80 
+            bg-[#030014] 
+            text-[#f9fafb] 
+            hover:bg-secondary/20 
             text-center"
           >
-            Get QuillScribe Free
+            Join QuillScribe Free
           </Link>
         </div>
         <div
           className="md:mt-[-90px]
-          sm:w-full
-          w-full
           flex
           justify-center
           items-center
           relative
-          sm:ml-0
         "
         >
           <Image
             src={Banner}
             priority
+            quality={100}
             alt="Application Banner"
             loading="eager"
-            className="object-contain"
+            className="object-cover"
             placeholder="empty"
           />
           <div
             className="bottom-0
-            top-[50%]
+            top-[30%]
             bg-gradient-to-t
-            dark:from-background
+            from-[#030014]
+            via-[#030014]/70
+            to-[#030014]/10
             left-0
             right-0
             absolute
             z-10
+            ml-[7.5%]
+            mr-[8%]
+            rounded-xl
           "
           />
         </div>
@@ -96,29 +101,6 @@ const HomePage = () => {
         <div
           className="overflow-hidden
           flex
-          after:content['']
-          after:dark:from-brand-dark
-          after:to-transparent
-          after:from-background
-          after:bg-gradient-to-l
-          after:right-0
-          after:bottom-0
-          after:top-0
-          after:w-20
-          after:z-10
-          after:absolute
-
-          before:content['']
-          before:dark:from-brand-dark
-          before:to-transparent
-          before:from-background
-          before:bg-gradient-to-r
-          before:left-0
-          before:top-0
-          before:bottom-0
-          before:w-20
-          before:z-10
-          before:absolute
         "
         >
           {[...Array(2)].map(() => (
@@ -147,7 +129,7 @@ const HomePage = () => {
                     height={200}
                     placeholder="blur"
                     className="object-contain max-w-none"
-                    style={{ width: "auto" }}
+                    style={{ width: "100px" }}
                   />
                 </div>
               ))}
@@ -188,7 +170,6 @@ const HomePage = () => {
           justify-center
           items-center
           relative
-          sm:ml-0
           rounded-2xl
           border-8
           border-washed-purple-300 
@@ -196,7 +177,14 @@ const HomePage = () => {
           overflow-clip
         "
         >
-          <Image src={Cal} alt="Banner" placeholder="blur" />
+          <Image
+            src={Cal}
+            alt="Banner"
+            placeholder="blur"
+            quality={100}
+            width={740}
+            height={710}
+          />
         </div>
       </section>
       <section className="relative">
@@ -245,10 +233,13 @@ const HomePage = () => {
                 <CustomCard
                   key={testimonial.name}
                   className="w-[500px]
-                  shrink-0s
+                  shrink-0
+                  max-w-xs
+                  sm:max-w-full
                   rounded-xl
-                  dark:bg-gradient-to-t
-                  dark:from-border dark:to-background
+                  bg-black/60
+                  text-washed-purple-800
+                  border-[#282637]
                 "
                   cardHeader={
                     <div
@@ -264,12 +255,9 @@ const HomePage = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <CardTitle className="text-foreground">
+                        <CardTitle className="text-[#cac2ff]">
                           {testimonial.name}
                         </CardTitle>
-                        <CardDescription className="dark:text-washed-purple-800">
-                          {testimonial.name.toLocaleLowerCase()}
-                        </CardDescription>
                       </div>
                     </div>
                   }

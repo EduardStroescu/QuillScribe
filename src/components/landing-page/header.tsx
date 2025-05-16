@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React, { useState } from "react";
+import { ComponentPropsWithoutRef, ElementRef, forwardRef } from "react";
 
 import Logo from "../../../public/quillScribeLogo.svg";
 
@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 
 const Header = () => {
-  const [path, setPath] = useState("#products");
   return (
     <header
       className="p-4
@@ -42,8 +41,7 @@ const Header = () => {
           style={{ width: "100px", height: "100px" }}
         />
         <span
-          className="font-semibold
-          dark:text-white
+          className="font-semibold text-white
         "
         >
           QuillScribe.
@@ -53,29 +51,18 @@ const Header = () => {
         <NavigationMenuList className="gap-6">
           <NavigationMenuItem>
             <NavigationMenuTrigger
-              className={cn({
-                "dark:text-white": path === "#pricing",
-                "dark:text-white/40": path !== "#pricing",
-                "font-normal": true,
-                "text-xl": true,
-              })}
+              className={cn(
+                "text-white dark:hover:text-white dark:text-white/40 font-normal text-xl"
+              )}
             >
               Pricing
             </NavigationMenuTrigger>
             <NavigationMenuContent>
               <ul className="grid w-[400px] gap-3 p-4  md:grid-row-2  ">
-                <ListItem
-                  onClick={() => setPath("#pricing")}
-                  title="Pro Plan"
-                  href="#pricing"
-                >
+                <ListItem title="Pro Plan" href="#pricing">
                   Unlock the full power of collaboration.
                 </ListItem>
-                <ListItem
-                  onClick={() => setPath("#pricing")}
-                  title="Free Plan"
-                  href="#pricing"
-                >
+                <ListItem title="Free Plan" href="#pricing">
                   Great for teams just starting out.
                 </ListItem>
               </ul>
@@ -83,15 +70,11 @@ const Header = () => {
           </NavigationMenuItem>
           <NavigationMenuItem>
             <NavigationMenuLink
-              onClick={() => setPath("#testimonials")}
               href="#testimonials"
-              className={cn(navigationMenuTriggerStyle(), {
-                "dark:text-white": path === "#testimonials",
-                "dark:text-white/40": path !== "#testimonials",
-                "font-normal": true,
-                "text-xl": true,
-                "cursor-pointer": true,
-              })}
+              className={cn(
+                navigationMenuTriggerStyle(),
+                "text-white dark:hover:text-white dark:text-white/40 font-normal text-xl"
+              )}
             >
               Testimonials
             </NavigationMenuLink>
@@ -121,25 +104,23 @@ const Header = () => {
 
 export default Header;
 
-const ListItem = React.forwardRef<
-  React.ElementRef<"a">,
-  React.ComponentPropsWithoutRef<"a">
->(({ className, title, children, ...props }, ref) => {
-  return (
-    <li>
-      <NavigationMenuLink asChild>
-        <a
-          ref={ref}
-          className={cn(
-            "group block select-none space-y-1 font-medium leading-none"
-          )}
-          {...props}
-        >
-          <div className="text-black dark:text-white text-sm font-medium leading-none">
-            {title}
-          </div>
-          <p
-            className="
+const ListItem = forwardRef<ElementRef<"a">, ComponentPropsWithoutRef<"a">>(
+  ({ className, title, children, ...props }, ref) => {
+    return (
+      <li>
+        <NavigationMenuLink asChild>
+          <a
+            ref={ref}
+            className={cn(
+              "group block select-none space-y-1 font-medium leading-none"
+            )}
+            {...props}
+          >
+            <div className="text-black dark:text-white text-sm font-medium leading-none">
+              {title}
+            </div>
+            <p
+              className="
             group-hover:text-black/70
             dark:group-hover:text-white/70
             line-clamp-2
@@ -148,13 +129,14 @@ const ListItem = React.forwardRef<
             text-black/40
             dark:text-white/40
           "
-          >
-            {children}
-          </p>
-        </a>
-      </NavigationMenuLink>
-    </li>
-  );
-});
+            >
+              {children}
+            </p>
+          </a>
+        </NavigationMenuLink>
+      </li>
+    );
+  }
+);
 
 ListItem.displayName = "ListItem";

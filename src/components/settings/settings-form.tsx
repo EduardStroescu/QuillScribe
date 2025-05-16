@@ -477,8 +477,7 @@ const SettingsForm = () => {
           {subscription?.status === "active" ? "Pro" : "Free"} Plan
         </p>
         <Link
-          href="/"
-          target="_blank"
+          href="/#pricing"
           className="text-muted-foreground flex flex-row items-center gap-2"
         >
           View Plans <ExternalLink size={16} />
