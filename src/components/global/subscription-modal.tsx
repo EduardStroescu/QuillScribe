@@ -52,7 +52,7 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ products }) => {
       const stripe = await getStripe();
       stripe?.redirectToCheckout({ sessionId });
     } catch (error) {
-      toast({ title: "Oppse! Something went wrong.", variant: "destructive" });
+      toast({ title: "Opps! Something went wrong.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

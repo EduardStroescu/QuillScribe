@@ -1,16 +1,18 @@
 <p align="center">
-  <a href="https://quillscribe-eduard-stroescu.koyeb.app/" target="blank"><img src="https://raw.githubusercontent.com/EduardStroescu/PubImages/main/WebsiteImages/quillScribe.jpg" alt="QuillScribe Preview" /></a>
+  <a href="https://quillscribe.vercel.app/" target="blank"><img src="https://raw.githubusercontent.com/EduardStroescu/PubImages/main/WebsiteImages/quillScribe.jpg" alt="QuillScribe Preview" /></a>
 </p>
 
 # QuillScribe
 
 ## Introduction
 
-Real-time text editor made for users to work on articles, posts, pdf content, etc. in a collaborative environment which includes shared workspaces, files and folders.
+A real-time collaborative text editor built for teams to create and edit content like articles, blog posts, and PDFs. With support for shared workspaces, organized files, and folders, it provides a streamlined environment for seamless teamwork.
 
 ## Overview
 
-The aim of this project is to create a real-time text editing application using Next.js 14, while being connected to Supabase, Stripe, and Socket.io. It features collaborative workspaces with shared folders and files, offering a seamless live experience. Users can enjoy features like real-time cursors and text selection, ensuring a dynamic and interactive editing environment.
+This project delivers a real-time text editing platform powered by Next.js 14, integrated with Supabase and Socket.io. It enables live collaboration within team workspaces, complete with shared folders and files. Key features include synchronized cursors and real-time text selection, fostering a responsive and interactive editing experience.
+
+The platform follows a typical SaaS model—free to use with optional monthly subscriptions that unlock advanced features such as increased storage and enhanced customization options.
 
 ### Features
 
@@ -29,7 +31,7 @@ The aim of this project is to create a real-time text editing application using 
 - Custom Rich text editor
 - Update profile settings
 - Manage payments in a portal
-- Custom Authentication
+- Supabase Authentication
 - Web sockets
 - Optimistic UI
 - Responsive design
@@ -47,15 +49,17 @@ The aim of this project is to create a real-time text editing application using 
 - [Zod](https://github.com/colinhacks/zod)
 - [Quill](https://github.com/quilljs/quill)
 - [Quill-Cursors](https://github.com/reedsy/quill-cursors)
-- [UUID](https://github.com/uuidjs/uuid)
 - [Emoji-Picker-React](https://github.com/ealush/emoji-picker-react)
 - [Next-Themes](https://github.com/pacocoursey/next-themes)
+- [Shadcn](https://github.com/shadcn-ui/ui)
 - [Radix-UI](https://www.radix-ui.com/)
-- [clsx](https://github.com/lukeed/clsx)
 - EsLint
 
-```
+<h3 color="red">IMPORTANT</h3>
 
+Please see the [notes](#notes) at the end of this document. As it is important in running the project both locally and in production.
+
+```
 Remember to update `.env` with your Supabase keys, website URL and Stripe keys!
 
 Example:
@@ -84,17 +88,9 @@ NEXT_PUBLIC_PRO_DEMO_EMAIL=
 NEXT_PUBLIC_PRO_DEMO_PASS=
 NEXT_PUBLIC_FREE_DEMO_EMAIL=
 NEXT_PUBLIC_FREE_DEMO_PASS=
-
 ```
 
-## Local development
-
-```bash
-
-git  clone https://github.com/EduardStroescu/QuillScribe.git
-
-npm  install
-
+```
 update next.config (NextJS > v14) with:
 
 /** @type  {import('next').NextConfig} */
@@ -108,18 +104,25 @@ const  nextConfig  = {
 
 module.exports  =  nextConfig;
 
-npm  run  dev
+```
 
+## Local development
+
+```bash
+git clone https://github.com/EduardStroescu/QuillScribe.git
+npm install
+npm run dev
 ```
 
 ## Building for production
 
 ```bash
-
-npm  run  build
-
+npm run build
 ```
 
-## Disclaimer
+<h2 color="red" id="notes">
+Notes
+</h2>
 
-`Deploying the project to Vercel will cause the socket to stop working (resulting in no real-time), because of Vercel's edge functions' transfer limits. To keep the functionality please deploy to Railway or another platform which supports real-time connections. `
+Deploying the WebSocket Gateway to Vercel will cause issues with the connection(resulting in no real-time) because of Vercel's edge functions' transfer limits.
+To keep the functionality I've separated the gateway in its own repo <a href="https://github.com/EduardStroescu/quillscribe-socket-server" target="_blank" rel="noopener noreferrer">here</a>, deploy it to Railway, Koyeb or another platform which supports real-time connections.

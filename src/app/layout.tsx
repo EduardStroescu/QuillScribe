@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/providers/next-theme-provider";
@@ -14,21 +12,22 @@ const inter = DM_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
-    template: 'QuillScribe | %s',
-    default: 'QuillScribe | Home',
+    template: "QuillScribe | %s",
+    default: "QuillScribe | Home",
   },
   description: "Real-time text editor for collaborators.",
   creator: "Eduard Stroescu",
   keywords: "real-time, collaborators, text, editor",
   applicationName: "QuillScribe",
-  icons: {icon: "/quillScribeFavicon.png?v="},
+  icons: { icon: "/quillScribeFavicon.png?v=" },
   openGraph: {
     type: "website",
     url: process.env.NEXT_PUBLIC_SITE_URL,
     title: "QuillScribe",
     description: "Real-time text editor for collaborators.",
     siteName: "QuillScribe",
-    images: "https://raw.githubusercontent.com/EduardStroescu/PubImages/main/WebsiteImages/quillScribe.jpg",
+    images:
+      "https://raw.githubusercontent.com/EduardStroescu/PubImages/main/WebsiteImages/quillScribe.jpg",
   },
   twitter: {
     card: "summary_large_image",
@@ -36,11 +35,11 @@ export const metadata: Metadata = {
     creator: "Eduard Stroescu",
     title: "QuillScribe",
     description: "Real-time text editor for collaborators.",
-    images: "https://raw.githubusercontent.com/EduardStroescu/PubImages/main/WebsiteImages/quillScribe.jpg",
+    images:
+      "https://raw.githubusercontent.com/EduardStroescu/PubImages/main/WebsiteImages/quillScribe.jpg",
   },
-  metadataBase: new URL(`${process.env.NEXT_PUBLIC_SITE_URL}`)
+  metadataBase: new URL(`${process.env.NEXT_PUBLIC_SITE_URL}`),
 };
-
 
 export default function RootLayout({
   children,
