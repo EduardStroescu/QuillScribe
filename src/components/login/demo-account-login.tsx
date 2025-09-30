@@ -1,18 +1,16 @@
 "use client";
 
-import React from "react";
 import { Button } from "../ui/button";
 import { actionLoginUser } from "@/lib/server-actions/auth-actions";
 import { useRouter } from "next/navigation";
 import { Separator } from "../ui/separator";
+import { type Dispatch, type FC, type SetStateAction } from "react";
 
 interface DemoAccontLoginProps {
-  setSubmitError: React.Dispatch<React.SetStateAction<string>>;
+  setSubmitError: Dispatch<SetStateAction<string>>;
 }
 
-const DemoAccountLogin: React.FC<DemoAccontLoginProps> = ({
-  setSubmitError,
-}) => {
+const DemoAccountLogin: FC<DemoAccontLoginProps> = ({ setSubmitError }) => {
   const router = useRouter();
   const handleDemoLogin = async (type: string) => {
     const email =
@@ -36,7 +34,7 @@ const DemoAccountLogin: React.FC<DemoAccontLoginProps> = ({
 
   return (
     <>
-      <p className="text-center text-[#cac2ff]">Demo Accounts</p>
+      <p className="text-center text-[#cac2ff] text-xl">Demo Accounts</p>
       <Separator />
       <Button
         type="button"

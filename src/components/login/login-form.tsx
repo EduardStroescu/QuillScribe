@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +19,7 @@ import Image from "next/image";
 import Logo from "/public/quillScribeLogo.svg";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import Loader from "@/components/global/Loader";
+import Loader from "@/components/global/loader";
 import { actionLoginUser } from "@/lib/server-actions/auth-actions";
 import DemoAccountLogin from "./demo-account-login";
 
@@ -58,11 +58,7 @@ const LoginForm = () => {
       >
         <Link
           href="/"
-          className="
-          w-full
-          flex
-          justify-left
-          items-center"
+          className="w-full flex justify-left items-center rounded ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <Image
             src={Logo}
@@ -72,10 +68,7 @@ const LoginForm = () => {
             style={{ width: "100px", height: "100px" }}
             priority
           />
-          <span
-            className="font-semibold
-          text-white text-4xl first-letter:ml-2"
-          >
+          <span className="font-semibold text-white text-4xl first-letter:ml-2">
             QuillScribe.
           </span>
         </Link>
@@ -125,12 +118,15 @@ const LoginForm = () => {
         >
           {!isLoading ? "Login" : <Loader />}
         </Button>
-        <span className="self-container text-[#cac2ff]">
-          Dont have an account?{" "}
-          <Link href="/signup" className="text-primary">
+        <div className="text-[#cac2ff] flex gap-2">
+          <span>{"Don't have an account?"}</span>
+          <Link
+            href="/signup"
+            className="text-primary rounded ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             Sign Up
           </Link>
-        </span>
+        </div>
         <DemoAccountLogin setSubmitError={setSubmitError} />
       </form>
     </Form>

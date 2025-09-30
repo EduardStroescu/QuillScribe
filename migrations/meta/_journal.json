@@ -8,6 +8,41 @@
       "when": 1704230996392,
       "tag": "0000_zippy_absorbing_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1755511299285,
+      "tag": "0001_open_franklin_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1755601889505,
+      "tag": "0002_low_major_mapleleaf",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1757264813499,
+      "tag": "0003_black_smiling_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1757424439552,
+      "tag": "0004_legal_franklin_richards",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1759147069734,
+      "tag": "0005_smiling_raider",
+      "breakpoints": true
     }
   ]
 }

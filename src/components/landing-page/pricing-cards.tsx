@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import CustomCard from "./custom-card";
 import { PRICING_CARDS, PRICING_PLANS } from "@/lib/const/constants";
 import clsx from "clsx";
@@ -14,7 +13,7 @@ import { Button } from "../ui/button";
 import { useSubscriptionModal } from "@/lib/providers/subscription-modal-provider";
 
 const PricingCards = () => {
-  const { open, setOpen } = useSubscriptionModal();
+  const { setOpen } = useSubscriptionModal();
   const router = useRouter();
 
   return (
@@ -35,21 +34,11 @@ const PricingCards = () => {
                 card.planType === PRICING_PLANS.proplan
                   ? "text-primary"
                   : "text-[#f9fafb]"
-              } text-2xl
-                  font-semibold
-              `}
+              } text-2xl font-semibold`}
             >
               {card.planType === PRICING_PLANS.proplan && (
                 <>
-                  <div
-                    className="hidden dark:block w-full blur-[120px] rounded-full h-32
-                        absolute
-                        -z-1
-                        bg-brand-primaryPurple/80
-                        animate-pulse
-                        top-0
-                      "
-                  />
+                  <div className="hidden dark:block w-full blur-[120px] rounded-full h-32 absolute -z-1 bg-brand-primaryPurple/80 animate-pulse top-0" />
                   <Image
                     src={Diamond}
                     alt="Pro Plan Icon"
@@ -62,11 +51,7 @@ const PricingCards = () => {
           }
           cardContent={
             <CardContent className="p-0">
-              <span
-                className="font-normal 
-                    text-2xl text-[#f9fafb]
-                "
-              >
+              <span className="font-normal text-2xl text-[#f9fafb]">
                 ${card.price}
               </span>
               {+card.price > 0 ? (
@@ -92,23 +77,9 @@ const PricingCards = () => {
             </CardContent>
           }
           cardFooter={
-            <ul
-              className="font-normal
-                  flex
-                  mb-2
-                  flex-col
-                  gap-4
-                  text-[#817eb5]
-                "
-            >
+            <ul className="font-normal flex mb-2 flex-col gap-4 text-[#817eb5]">
               {card.freatures.map((feature) => (
-                <li
-                  key={feature}
-                  className="flex
-                      items-center
-                      gap-2
-                    "
-                >
+                <li key={feature} className="flex items-center gap-2">
                   <Image src={CheckIcon} alt="Check Icon" />
                   {feature}
                 </li>

@@ -1,14 +1,16 @@
-import React from 'react';
-import CustomDialogTrigger from '../global/custom-dialog-trigger';
-import SettingsForm from './settings-form';
+import { type ComponentProps, type FC, type ReactNode } from "react";
+import CustomDialogTrigger from "../global/custom-dialog-trigger";
+import SettingsForm from "./settings-form";
+import { DialogTrigger } from "../ui/dialog";
 
-interface SettingsProps {
-  children: React.ReactNode;
+interface SettingsProps extends ComponentProps<typeof DialogTrigger> {
+  children: ReactNode;
 }
 
-const Settings: React.FC<SettingsProps> = ({ children }) => {
+const Settings: FC<SettingsProps> = ({ children, ...props }) => {
   return (
     <CustomDialogTrigger
+      {...props}
       header="Settings"
       content={<SettingsForm />}
     >

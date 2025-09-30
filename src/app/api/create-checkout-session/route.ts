@@ -1,6 +1,6 @@
 import { stripe } from "@/lib/stripe";
 import { createOrRetrieveCustomer } from "@/lib/stripe/adminTasks";
-import { getURL } from "@/lib/utils";
+import { getStripeRedirectUrl } from "@/lib/utils";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 
 import { cookies } from "next/headers";
@@ -32,8 +32,8 @@ export async function POST(request: Request) {
       mode: "subscription",
       allow_promotion_codes: true,
       subscription_data: { trial_from_plan: true, metadata },
-      success_url: `${getURL()}/dashboard`,
-      cancel_url: `${getURL()}/dashboard`,
+      success_url: `${getStripeRedirectUrl()}/dashboard`,
+      cancel_url: `${getStripeRedirectUrl()}/dashboard`,
     });
     return NextResponse.json({ sessionId: session.id });
   } catch (error: any) {

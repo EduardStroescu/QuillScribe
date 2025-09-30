@@ -1,32 +1,55 @@
 import { stripe } from "@/lib/stripe";
 import { createOrRetrieveCustomer } from "@/lib/stripe/adminTasks";
-import { getURL } from "@/lib/utils";
+import { getStripeRedirectUrl } from "@/lib/utils";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function POST() {
   try {
-    const supabse = createRouteHandlerClient({ cookies });
+    const supabase = createRouteHandlerClient({ cookies });
     const {
       data: { user },
-    } = await supabse.auth.getUser();
+    } = await supabase.auth.getUser();
 
-    if (!user) throw new Error("Could not find the user");
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const customer = await createOrRetrieveCustomer({
       email: user.email || "",
-      uuid: user.id || "",
+      uuid: user.id,
     });
 
-    if (!customer) throw new Error("No Customer");
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
     const { url } = await stripe.billingPortal.sessions.create({
       customer,
-      return_url: `${getURL()}/dashboard`,
+      return_url: `${getStripeRedirectUrl()}/dashboard`,
     });
+
     return NextResponse.json({ url });
   } catch (error) {
-    console.log("ERROR", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("ERROR creating billing portal session:", error);
+    if (
+      error &&
+      typeof error === "object" &&
+      !Array.isArray(error) &&
+      "message" in error
+    ) {
+      return NextResponse.json(
+        { error: error.message || "Internal Server Error" },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json(
+      { error: error || "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

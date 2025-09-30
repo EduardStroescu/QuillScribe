@@ -1,233 +1,255 @@
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useEffect } from "react";
-import { useAppState } from "../providers/state-provider";
 
-import { File, workspace } from "../supabase/supabase.types";
-import { Folder } from "../supabase/supabase.types";
+import { useAppStore, useAppStoreActions } from "../stores/app-store";
+import {
+  RealtimePostgresDeletePayload,
+  RealtimePostgresInsertPayload,
+  RealtimePostgresUpdatePayload,
+} from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
-import { findFileById, findFolderById, findWorkspaceById } from "../utils";
+import { useSupabaseUser } from "../providers/supabase-user-provider";
 
 const useSupabaseRealtime = () => {
+  const { user } = useSupabaseUser();
   const supabase = createClientComponentClient();
-  const { dispatch, state, workspaceId: selectedWorskpace } = useAppState();
   const router = useRouter();
+
+  const {
+    findFileById,
+    findFolderById,
+    findWorkspaceById,
+    addFile,
+    deleteFile,
+    updateFile,
+    addFolder,
+    deleteFolder,
+    updateFolder,
+    addWorkspace,
+    deleteWorkspace,
+    updateWorkspace,
+  } = useAppStoreActions();
+
   useEffect(() => {
-    const fileSubscribe = supabase
-      .channel("file-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "files" },
-        async (payload) => {
-          if (payload.eventType === "INSERT") {
-            const {
-              folder_id: folderId,
-              workspace_id: workspaceId,
-              id: fileId,
-            } = payload.new;
-            if (!findFileById(state, workspaceId, folderId, fileId)) {
-              const newFile: File = {
-                id: payload.new.id,
-                workspaceId: payload.new.workspace_id,
-                folderId: payload.new.folder_id,
-                createdAt: payload.new.created_at,
-                title: payload.new.title,
-                iconId: payload.new.icon_id,
-                data: payload.new.data,
-                inTrash: payload.new.in_trash,
-                bannerUrl: payload.new.banner_url,
-              };
-              dispatch({
-                type: "ADD_FILE",
-                payload: { file: newFile, folderId, workspaceId },
-              });
-            }
-          } else if (payload.eventType === "DELETE") {
-            let workspaceId = "";
-            let folderId = "";
-            const fileExists = state.workspaces.some((workspace) =>
-              workspace.folders.some((folder) =>
-                folder.files.some((file) => {
-                  if (file.id === payload.old.id) {
-                    workspaceId = workspace.id;
-                    folderId = folder.id;
-                    return true;
-                  }
-                })
-              )
-            );
-            if (fileExists && workspaceId && folderId) {
-              router.replace(`/dashboard/${workspaceId}`);
-              dispatch({
-                type: "DELETE_FILE",
-                payload: { fileId: payload.old.id, folderId, workspaceId },
-              });
-            }
-          } else if (payload.eventType === "UPDATE") {
-            const { folder_id: folderId, workspace_id: workspaceId } =
-              payload.new;
-            state.workspaces.some((workspace) =>
-              workspace.folders.some((folder) =>
-                folder.files.some((file) => {
-                  if (file.id === payload.new.id) {
-                    dispatch({
-                      type: "UPDATE_FILE",
-                      payload: {
-                        workspaceId,
-                        folderId,
-                        fileId: payload.new.id,
-                        file: {
-                          title: payload.new.title,
-                          iconId: payload.new.icon_id,
-                          inTrash: payload.new.in_trash,
-                        },
-                      },
-                    });
-                    return true;
-                  }
-                })
-              )
-            );
-          }
-        }
-      )
-      .subscribe();
+    const currentClientMutationId =
+      useAppStore.getState().currentClientMutationId;
 
-    const folderSubscribe = supabase
-      .channel("folder-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "folders" },
-        async (payload) => {
-          if (payload.eventType === "INSERT") {
-            const { id: folderId, workspace_id: workspaceId } = payload.new;
-            if (!findFolderById(state, workspaceId, folderId)) {
-              const newFolder: Folder = {
-                id: payload.new.id,
-                workspaceId: payload.new.workspace_id,
-                createdAt: payload.new.created_at,
-                title: payload.new.title,
-                iconId: payload.new.icon_id,
-                data: payload.new.data,
-                inTrash: payload.new.in_trash,
-                bannerUrl: payload.new.banner_url,
-              };
-              dispatch({
-                type: "ADD_FOLDER",
-                payload: { workspaceId, folder: { ...newFolder, files: [] } },
-              });
-            }
-          } else if (payload.eventType === "DELETE") {
-            let workspaceId = "";
-            let folderId = "";
-            const folderExists = state.workspaces.some((workspace) =>
-              workspace.folders.some((folder) => {
-                if (folder.id === payload.old.id) {
-                  workspaceId = workspace.id;
-                  folderId = folder.id;
-                  return true;
-                }
-              })
-            );
-            if (folderExists && workspaceId && folderId) {
-              router.replace(`/dashboard/${workspaceId}`);
-              dispatch({
-                type: "DELETE_FOLDER",
-                payload: { folderId: payload.old.id, workspaceId },
-              });
-            }
-          } else if (payload.eventType === "UPDATE") {
-            const { workspace_id: workspaceId } = payload.new;
-            state.workspaces.some((workspace) =>
-              workspace.folders.some((folder) => {
-                if (folder.id === payload.new.id) {
-                  dispatch({
-                    type: "UPDATE_FOLDER",
-                    payload: {
-                      folder: {
-                        title: payload.new.title,
-                        iconId: payload.new.icon_id,
-                        inTrash: payload.new.in_trash,
-                        bannerUrl: payload.new.banner_url,
-                      },
-                      workspaceId,
-                      folderId: payload.new.id,
-                    },
-                  });
-                  return true;
-                }
-              })
-            );
-          }
-        }
-      )
-      .subscribe();
+    if (!currentClientMutationId) return;
 
-    const workspaceSubscribe = supabase
-      .channel("workspace-changes")
+    const subscribeTable = (
+      table: string,
+      processInsert: (payload: RealtimePostgresInsertPayload<any>) => void,
+      processUpdate: (payload: RealtimePostgresUpdatePayload<any>) => void,
+      processDelete: (payload: RealtimePostgresDeletePayload<any>) => void
+    ) =>
+      supabase
+        .channel(`${table}-changes`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table },
+          (payload) => {
+            // Metadata column added to not rerender unnecessarily on mutations done by the same client
+            const actor: string | null | undefined =
+              (payload.new as { last_modified_by?: string | null })
+                ?.last_modified_by ??
+              (payload.old as { last_modified_by?: string | null })
+                ?.last_modified_by;
+
+            if (
+              payload.eventType !== "DELETE" &&
+              actor === currentClientMutationId
+            )
+              return;
+
+            switch (payload.eventType) {
+              case "INSERT":
+                processInsert(payload);
+                break;
+              case "UPDATE":
+                processUpdate(payload);
+                break;
+              case "DELETE":
+                processDelete(payload);
+                break;
+            }
+          }
+        )
+        .subscribe();
+
+    // --- FILES ---
+    const fileSub = subscribeTable(
+      "files",
+      ({ new: n }) => {
+        const existing = findFileById(n.workspace_id, n.folder_id, n.id);
+        if (existing) return;
+        addFile(n.workspace_id, n.folder_id, {
+          id: n.id,
+          workspaceId: n.workspace_id,
+          folderId: n.folder_id,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+          title: n.title,
+          iconId: n.icon_id,
+          data: n.data,
+          inTrash: n.in_trash,
+          bannerUrl: n.banner_url,
+          lastModifiedBy: n.last_modified_by,
+        });
+      },
+      ({ new: n }) => {
+        const curr = findFileById(n.workspace_id, n.folder_id, n.id);
+        if (!curr) return;
+        updateFile(n.workspace_id, n.folder_id, n.id, {
+          title: n.title,
+          iconId: n.icon_id,
+          inTrash: n.in_trash,
+          lastModifiedBy: n.last_modified_by,
+          updatedAt: n.updated_at,
+        });
+      },
+      ({ old: o }) => {
+        const curr = findFileById(o.workspace_id, o.folder_id, o.id);
+        if (!curr) return;
+        deleteFile(o.workspace_id, o.folder_id, o.id);
+        router.refresh();
+      }
+    );
+
+    // --- FOLDERS ---
+    const folderSub = subscribeTable(
+      "folders",
+      ({ new: n }) => {
+        const existing = findFolderById(n.workspace_id, n.id);
+        if (existing) return;
+        addFolder(n.workspace_id, {
+          id: n.id,
+          workspaceId: n.workspace_id,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+          title: n.title,
+          iconId: n.icon_id,
+          data: n.data,
+          inTrash: n.in_trash,
+          bannerUrl: n.banner_url,
+          files: [],
+          lastModifiedBy: n.last_modified_by,
+        });
+      },
+      ({ new: n }) => {
+        const curr = findFolderById(n.workspace_id, n.id);
+        if (!curr) return;
+        updateFolder(n.workspace_id, n.id, {
+          title: n.title,
+          iconId: n.icon_id,
+          inTrash: n.in_trash,
+          bannerUrl: n.banner_url,
+          lastModifiedBy: n.last_modified_by,
+          updatedAt: n.updated_at,
+        });
+      },
+      ({ old: o }) => {
+        const curr = findFolderById(o.workspace_id, o.id);
+        if (!curr) return;
+        deleteFolder(o.workspace_id, o.id);
+        router.refresh();
+      }
+    );
+
+    // --- WORKSPACES ---
+    const workspaceSub = subscribeTable(
+      "workspaces",
+      ({ new: n }) => {
+        const existing = findWorkspaceById(n.id);
+        if (existing) return;
+        addWorkspace({
+          id: n.id,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+          title: n.title,
+          iconId: n.icon_id,
+          data: n.data,
+          inTrash: n.in_trash,
+          bannerUrl: n.banner_url,
+          workspaceOwner: n.workspace_owner,
+          logo: n.logo,
+          folders: [],
+          lastModifiedBy: n.last_modified_by,
+        });
+        router.refresh();
+      },
+      ({ new: n }) => {
+        const curr = findWorkspaceById(n.id);
+        if (!curr) return;
+        updateWorkspace(n.id, {
+          title: n.title,
+          iconId: n.icon_id,
+          data: n.data,
+          inTrash: n.in_trash,
+          bannerUrl: n.banner_url,
+          workspaceOwner: n.workspace_owner,
+          logo: n.logo,
+          updatedAt: n.updated_at,
+          lastModifiedBy: n.last_modified_by,
+        });
+      },
+      ({ old: o }) => {
+        const curr = findWorkspaceById(o.id);
+        if (!curr) return;
+        deleteWorkspace(o.id);
+        router.refresh();
+      }
+    );
+
+    return () => {
+      fileSub.unsubscribe();
+      folderSub.unsubscribe();
+      workspaceSub.unsubscribe();
+    };
+  }, [
+    router,
+    supabase,
+    findFileById,
+    addFile,
+    deleteFile,
+    updateFile,
+    findFolderById,
+    addFolder,
+    deleteFolder,
+    updateFolder,
+    findWorkspaceById,
+    addWorkspace,
+    deleteWorkspace,
+    updateWorkspace,
+  ]);
+
+  useEffect(() => {
+    const collaboratorsSub = supabase
+      .channel(`collaborators-changes`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "workspaces" },
-        async (payload) => {
+        { event: "*", schema: "public", table: "collaborators" },
+        (payload) => {
+          const affectedUserId =
+            (payload.new as { user_id?: string })?.user_id ??
+            (payload.old as { user_id?: string })?.user_id;
+
+          if (affectedUserId !== user?.id) return;
+
           if (payload.eventType === "INSERT") {
-            const { id: workspaceId } = payload.new;
-            if (!findWorkspaceById(state, workspaceId)) {
-              const newWorkspace: workspace = {
-                id: payload.new.id,
-                createdAt: payload.new.created_at,
-                title: payload.new.title,
-                iconId: payload.new.icon_id,
-                data: payload.new.data,
-                inTrash: payload.new.in_trash,
-                bannerUrl: payload.new.banner_url,
-                workspaceOwner: payload.new.workspace_owner,
-                logo: payload.new.logo,
-              };
-              dispatch({
-                type: "ADD_WORKSPACE",
-                payload: { ...newWorkspace, folders: [] },
-              });
-              router.refresh();
-            }
+            const curr = findWorkspaceById(payload.new.workspace_id);
+            if (!curr) router.refresh();
           } else if (payload.eventType === "DELETE") {
-            let workspaceId = "";
-            const workspaceExists = state.workspaces.some((workspace) => {
-              if (workspace.id === payload.old.id) {
-                workspaceId = workspace.id;
-                return true;
-              }
-            });
-            if (workspaceExists && workspaceId) {
-              router.replace(`/dashboard`);
-              dispatch({
-                type: "DELETE_WORKSPACE",
-                payload: workspaceId,
-              });
-            }
-          } else if (payload.eventType === "UPDATE") {
-            const { ...newWorkspace } = payload.new;
-            state.workspaces.some((workspace) => {
-              if (workspace.id === payload.new.id) {
-                dispatch({
-                  type: "UPDATE_WORKSPACE",
-                  payload: {
-                    workspaceId: payload.new.id,
-                    workspace: { ...newWorkspace },
-                  },
-                });
-                return true;
-              }
-            });
+            const curr = findWorkspaceById(payload.old.workspace_id);
+            if (curr) router.refresh();
           }
         }
       )
       .subscribe();
 
     return () => {
-      fileSubscribe.unsubscribe();
-      folderSubscribe.unsubscribe();
-      workspaceSubscribe.unsubscribe();
+      collaboratorsSub.unsubscribe();
     };
-  }, [supabase, state, selectedWorskpace, dispatch, router]);
+  }, [supabase, user?.id, findWorkspaceById, router]);
 };
 
 export default useSupabaseRealtime;

@@ -1,154 +1,171 @@
 "use client";
 
-import { useAppState } from "@/lib/providers/state-provider";
-import { Folder } from "@/lib/supabase/supabase.types";
-import React, { useEffect, useRef, useState } from "react";
+import { type File, type Folder } from "@/lib/supabase/supabase.types";
+import { useCallback, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import TooltipComponent from "../global/tooltip-component";
 import { PlusIcon } from "lucide-react";
 import { useSupabaseUser } from "@/lib/providers/supabase-user-provider";
-import { v4 } from "uuid";
-import { createFolder } from "@/lib/supabase/queries";
-import { useToast } from "../ui/use-toast";
-import { Accordion } from "../ui/accordion";
-import Dropdown from "./Dropdown";
+import { v4 as uuid } from "uuid";
+import { createFolder } from "@/lib/supabase/actions";
+import { toast } from "../ui/use-toast";
+import Dropdown from "./dropdown";
 import useSupabaseRealtime from "@/lib/hooks/useSupabaseRealtime";
 import { useSubscriptionModal } from "@/lib/providers/subscription-modal-provider";
-import { findFolderById, findWorkspaceById } from "@/lib/utils";
+import { SidebarGroup, SidebarGroupLabel, SidebarMenu } from "../ui/sidebar";
+import { useParams } from "next/navigation";
+import {
+  type appFoldersType,
+  selectWorkspaceById,
+  useAppStore,
+  useAppStoreActions,
+} from "@/lib/stores/app-store";
+import { useShallow } from "zustand/react/shallow";
 
-interface FoldersDropdownListProps {
-  workspaceFolders: Folder[];
-  workspaceId: string;
-}
+const FoldersDropdownListSkeleton = dynamic(
+  () => import("./folders-dropdown-list-placeholder")
+);
 
-const FoldersDropdownList: React.FC<FoldersDropdownListProps> = ({
-  workspaceFolders,
-  workspaceId,
-}) => {
-  useSupabaseRealtime();
-  const { state, dispatch, folderId } = useAppState();
-  const { setOpen } = useSubscriptionModal();
-  const { toast } = useToast();
-  const [folders, setFolders] = useState<Folder[]>([]);
+const FoldersDropdownList = () => {
   const { subscription } = useSupabaseUser();
+  const { workspaceId, folderId, fileId } = useParams<{
+    workspaceId?: string;
+    folderId?: string;
+    fileId?: string;
+  }>();
+  const {
+    addFolder: addStateFolder,
+    deleteFolder: deleteStateFolder,
+    setFiles: setStateFiles,
+  } = useAppStoreActions();
+  const { setOpen } = useSubscriptionModal();
+  useSupabaseRealtime();
 
-  const stateRef = useRef(state);
+  const workspace = useAppStore(useShallow(selectWorkspaceById(workspaceId)));
 
-  // Keep ref updated with the latest state
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+  const folders = useMemo(
+    () => workspace?.folders?.filter((folder) => !folder.inTrash) ?? null,
+    [workspace?.folders]
+  );
 
-  //Sync initial server state with the app state
-  useEffect(() => {
-    if (workspaceFolders.length > 0) {
-      dispatch({
-        type: "SET_FOLDERS",
-        payload: {
-          workspaceId,
-          folders: workspaceFolders.map((folder) => ({
-            ...folder,
-            files:
-              findFolderById(stateRef.current, workspaceId, folder.id)?.files ||
-              [],
-          })),
-        },
-      });
-    }
-  }, [workspaceFolders, workspaceId, dispatch]);
-
-  useEffect(() => {
-    setFolders(findWorkspaceById(state, workspaceId)?.folders || []);
-  }, [state, workspaceId]);
-
-  //add folder
+  // add folder
   const addFolderHandler = async () => {
-    if (folders.length >= 3 && !subscription) {
+    if (folders && folders.length >= 3 && !subscription) {
       setOpen(true);
       return;
     }
+    if (!workspace?.id) return;
     const newFolder: Folder = {
       data: null,
-      id: v4(),
+      id: uuid(),
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       title: "Untitled",
       iconId: "📄",
       inTrash: null,
-      workspaceId,
-      bannerUrl: "",
+      workspaceId: workspace.id,
+      bannerUrl: null,
+      lastModifiedBy: useAppStore.getState().currentClientMutationId,
     };
-    dispatch({
-      type: "ADD_FOLDER",
-      payload: { workspaceId, folder: { ...newFolder, files: [] } },
-    });
-    const { data, error } = await createFolder(newFolder);
+    addStateFolder(workspace.id, { ...newFolder, files: [] });
+    const { error } = await createFolder(newFolder);
     if (error) {
+      deleteStateFolder(workspace.id, newFolder.id);
       toast({
         title: "Error",
         variant: "destructive",
         description: "Could not create the folder",
       });
-    } else {
-      toast({
-        title: "Success",
-        description: "Created folder.",
-      });
+      return;
     }
+    toast({
+      title: "Success",
+      description: "Created folder.",
+    });
   };
 
+  // Preload folder files on hover and on click if they are not already loaded
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const [isPreloadingFilesFolderId, setIsPreloadingFilesFolderId] = useState<
+    Folder["id"] | null
+  >(null);
+  const handlePreloadFiles = useCallback(
+    async (folder: appFoldersType) => {
+      if (
+        !folder.id ||
+        !folder.workspaceId ||
+        isPreloadingFilesFolderId === folder.id ||
+        folder.files.length
+      )
+        return;
+
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+
+      setIsPreloadingFilesFolderId(folder.id);
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      try {
+        const res = await fetch(`/api/folders/${folder.id}/files`, {
+          signal: controller.signal,
+        });
+        const { data: files } = (await res.json()) as
+          | { data: File[]; error: null }
+          | { data: null; error: string };
+        if (files) {
+          setStateFiles(folder.workspaceId, folder.id, files);
+        }
+      } catch (err) {
+        if ((err as any).name !== "AbortError") {
+          // Do Nothing
+        }
+      } finally {
+        setIsPreloadingFilesFolderId(null);
+        abortControllerRef.current = null;
+      }
+    },
+    [isPreloadingFilesFolderId, setStateFiles]
+  );
+
+  if (!folders) return <FoldersDropdownListSkeleton />;
+
   return (
-    <>
-      <div
-        className="flex
-        sticky 
-        z-20 
-        top-0 
-        bg-background 
-        w-full  
-        h-10 
-        group/title 
-        justify-between 
-        items-center 
-        pr-4 
-        text-Neutrals/neutrals-8
-  "
-      >
-        <span
-          className="text-Neutrals-8 
-        font-bold 
-        text-xs"
+    <SidebarGroup>
+      <SidebarGroupLabel className="justify-between">
+        FOLDERS
+        <TooltipComponent
+          message="Create Folder"
+          onClick={addFolderHandler}
+          aria-label="Create Folder"
+          disabled={!workspace?.id}
+          className="outline-none ring-sidebar-ring focus-visible:ring-2 rounded-full"
         >
-          FOLDERS
-        </span>
-        <TooltipComponent message="Create Folder">
-          <PlusIcon
-            onClick={addFolderHandler}
-            size={16}
-            className="group-hover/title:inline-block
-            hidden 
-            cursor-pointer
-            hover:dark:text-white
-          "
-          />
+          <PlusIcon size={16} />
         </TooltipComponent>
-      </div>
-      <Accordion
-        type="multiple"
-        defaultValue={[folderId || ""]}
-        className="pb-20"
-      >
-        {folders
-          .filter((folder) => !folder.inTrash)
-          .map((folder) => (
-            <Dropdown
-              key={folder.id}
-              title={folder.title}
-              listType="folder"
-              id={folder.id}
-              iconId={folder.iconId}
-            />
-          ))}
-      </Accordion>
-    </>
+      </SidebarGroupLabel>
+      <SidebarMenu>
+        {folders.map((folder) => (
+          <Dropdown
+            key={folder.id}
+            itemType="folder"
+            content={folder}
+            handlePreloadFiles={() => handlePreloadFiles(folder)}
+            isActive={!fileId && folder.id === folderId}
+          >
+            {folder.files
+              .filter((file) => !file.inTrash)
+              .map((file) => (
+                <Dropdown
+                  key={file.id}
+                  itemType="file"
+                  content={file}
+                  isActive={file.id === fileId}
+                />
+              ))}
+          </Dropdown>
+        ))}
+      </SidebarMenu>
+    </SidebarGroup>
   );
 };
 

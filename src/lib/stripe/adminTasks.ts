@@ -1,5 +1,9 @@
 import Stripe from "stripe";
-import { Price, Product, Subscription } from "../supabase/supabase.types";
+import {
+  type Price,
+  type Product,
+  type Subscription,
+} from "../supabase/supabase.types";
 import db from "../supabase/db";
 import {
   customers,

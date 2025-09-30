@@ -1,9 +1,9 @@
 import Header from "@/components/landing-page/header";
 import { SubscriptionModalProvider } from "@/lib/providers/subscription-modal-provider";
 import { getActiveProductsWithPrice } from "@/lib/supabase/queries";
-import React from "react";
+import { type ReactNode } from "react";
 
-const HomePageLayout = async ({ children }: { children: React.ReactNode }) => {
+const HomePageLayout = async ({ children }: { children: ReactNode }) => {
   const { data: products } = await getActiveProductsWithPrice();
 
   return (

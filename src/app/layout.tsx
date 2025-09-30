@@ -1,14 +1,12 @@
-import type { Metadata } from "next";
 import "./globals.css";
+import type { Metadata } from "next";
 import { ThemeProvider } from "@/lib/providers/next-theme-provider";
 import { DM_Sans } from "next/font/google";
-import { twMerge } from "tailwind-merge";
-import AppStateProvider from "@/lib/providers/state-provider";
 import { SupabaseUserProvider } from "@/lib/providers/supabase-user-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { SocketProvider } from "@/lib/providers/socket-provider";
 
-const inter = DM_Sans({ subsets: ["latin"] });
+const dmSans = DM_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
@@ -19,7 +17,7 @@ export const metadata: Metadata = {
   creator: "Eduard Stroescu",
   keywords: "real-time, collaborators, text, editor",
   applicationName: "QuillScribe",
-  icons: { icon: "/quillScribeFavicon.png?v=" },
+  icons: { icon: "/quillScribeFavicon.png" },
   openGraph: {
     type: "website",
     url: process.env.NEXT_PUBLIC_SITE_URL,
@@ -48,16 +46,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={twMerge("bg-background", inter.className)}>
+      <body className={`bg-background antialiased ${dmSans.className}`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <AppStateProvider>
-            <SupabaseUserProvider>
-              <SocketProvider>
-                {children}
-                <Toaster />
-              </SocketProvider>
-            </SupabaseUserProvider>
-          </AppStateProvider>
+          <SupabaseUserProvider>
+            <SocketProvider>
+              {children}
+              <Toaster />
+            </SocketProvider>
+          </SupabaseUserProvider>
         </ThemeProvider>
       </body>
     </html>

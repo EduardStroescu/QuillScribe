@@ -1,69 +1,58 @@
+"use client";
+
 import Link from "next/link";
-import React from "react";
-import { twMerge } from "tailwind-merge";
 import QuillScribeHomeIcon from "../icons/quillScribeHomeIcon";
 import QuillScribeSettingsIcon from "../icons/quillScribeSettingsIcon";
 import QuillScribeTrashIcon from "../icons/quillScribeTrashIcon";
 import Settings from "../settings/settings";
 import Trash from "../trash/trash";
+import { useParams } from "next/navigation";
+import {
+  SidebarGroup,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "../ui/sidebar";
+import { Workspace } from "@/lib/supabase/supabase.types";
 
-interface NativeNavigationProps {
-  myWorkspaceId: string;
-  className?: string;
-}
+const NativeNavigation = ({ workspaces }: { workspaces: Workspace[] }) => {
+  const { workspaceId } = useParams();
 
-const NativeNavigation: React.FC<NativeNavigationProps> = ({
-  myWorkspaceId,
-  className,
-}) => {
+  const isDisabled = !workspaces.some((w) => w.id === workspaceId);
+
   return (
-    <nav className={twMerge("my-2", className)}>
-      <ul className="flex flex-col gap-2">
-        <li>
-          <Link
-            className="group/native
-            flex
-            text-Neutrals/neutrals-9 hover:text-inherit
-            transition-all
-            gap-2
-          "
-            href={`/dashboard/${myWorkspaceId}`}
+    <SidebarGroup>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            className="group/native"
+            disabled={isDisabled}
           >
-            <QuillScribeHomeIcon />
-            <span>My Workspace</span>
-          </Link>
-        </li>
-
-        <Settings>
-          <li
-            className="group/native
-            flex
-            text-Neutrals/neutrals-9 hover:text-inherit
-            transition-all
-            gap-2
-            cursor-pointer
-          "
-          >
-            <QuillScribeSettingsIcon />
-            <span>Settings</span>
-          </li>
-        </Settings>
-
-        <Trash>
-          <li
-            className="group/native
-            flex
-            text-Neutrals/neutrals-9 hover:text-inherit
-            transition-all
-            gap-2
-          "
-          >
-            <QuillScribeTrashIcon />
-            <span>Trash</span>
-          </li>
-        </Trash>
-      </ul>
-    </nav>
+            <Link href={`/dashboard/${workspaceId}`}>
+              <QuillScribeHomeIcon />
+              <span>My Workspace</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <Settings asChild>
+            <SidebarMenuButton className="group/native" disabled={isDisabled}>
+              <QuillScribeSettingsIcon />
+              <span>Settings</span>
+            </SidebarMenuButton>
+          </Settings>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <Trash asChild>
+            <SidebarMenuButton className="group/native" disabled={isDisabled}>
+              <QuillScribeTrashIcon />
+              <span>Trash</span>
+            </SidebarMenuButton>
+          </Trash>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarGroup>
   );
 };
 

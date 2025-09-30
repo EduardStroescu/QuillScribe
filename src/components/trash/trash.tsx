@@ -1,17 +1,15 @@
-import React from 'react';
-import CustomDialogTrigger from '../global/custom-dialog-trigger';
-import TrashRestore from './trash-restore';
+import { type ComponentProps, type FC, type ReactNode } from "react";
+import CustomDialogTrigger from "../global/custom-dialog-trigger";
+import TrashRestore from "./trash-restore";
+import { DialogTrigger } from "../ui/dialog";
 
-interface TrashProps {
-  children: React.ReactNode;
+interface TrashProps extends ComponentProps<typeof DialogTrigger> {
+  children: ReactNode;
 }
 
-const Trash: React.FC<TrashProps> = ({ children }) => {
+const Trash: FC<TrashProps> = ({ children, ...props }) => {
   return (
-    <CustomDialogTrigger
-      header="Trash"
-      content={<TrashRestore />}
-    >
+    <CustomDialogTrigger {...props} header="Trash" content={<TrashRestore />}>
       {children}
     </CustomDialogTrigger>
   );

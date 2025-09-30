@@ -1,9 +1,9 @@
 "use client";
 
-import { AuthUser } from "@supabase/supabase-js";
-import React, { useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { v4 } from "uuid";
+import { v4 as uuid } from "uuid";
 
 import {
   Card,
@@ -12,33 +12,31 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import EmojiPicker from "../global/emoji-picker";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { Subscription, workspace } from "@/lib/supabase/supabase.types";
+import {
+  type Subscription,
+  type Workspace,
+} from "@/lib/supabase/supabase.types";
 import { Button } from "../ui/button";
-import Loader from "../global/Loader";
-import { createWorkspace } from "@/lib/supabase/queries";
-import { useToast } from "../ui/use-toast";
-import { useRouter } from "next/navigation";
-import { useAppState } from "@/lib/providers/state-provider";
+import Loader from "../global/loader";
+import { createWorkspace } from "@/lib/supabase/actions";
+import { toast } from "../ui/use-toast";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { CreateWorkspaceFormSchema } from "@/lib/types";
 import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useSidebar } from "../ui/sidebar";
+import { useAppStore, useAppStoreActions } from "@/lib/stores/app-store";
+import TooltipComponent from "../global/tooltip-component";
+import EmojiPicker from "../global/emoji-picker";
 
-interface DashboardSetupProps {
-  user: AuthUser;
-  subscription: Subscription | null;
-}
-
-const DashboardSetup: React.FC<DashboardSetupProps> = ({
-  subscription,
-  user,
-}) => {
-  const { toast } = useToast();
-  const router = useRouter();
-  const { dispatch } = useAppState();
+const DashboardSetup = ({ subscription }: { subscription: Subscription }) => {
   const [selectedEmoji, setSelectedEmoji] = useState("💼");
+  const { addWorkspace } = useAppStoreActions();
+  const { setOpen } = useSidebar();
+
+  const router = useRouter();
   const supabase = createClientComponentClient();
   const {
     register,
@@ -46,9 +44,9 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
     reset,
     formState: { isSubmitting: isLoading, errors },
   } = useForm<z.infer<typeof CreateWorkspaceFormSchema>>({
+    resolver: zodResolver(CreateWorkspaceFormSchema),
     mode: "onChange",
     defaultValues: {
-      logo: "",
       workspaceName: "",
     },
   });
@@ -56,110 +54,105 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
   const onSubmit: SubmitHandler<
     z.infer<typeof CreateWorkspaceFormSchema>
   > = async (value) => {
-    const file = value.logo?.[0];
-    let filePath = null;
-    const workspaceUUID = v4();
+    const file = value.logo?.[0] as File | undefined;
+    let filePath: string | null = null;
+    const workspaceUUID = uuid();
 
     if (file) {
       try {
-        const { data, error } = await supabase.storage
+        const storageResult = await supabase.storage
           .from("workspace-logos")
           .upload(`workspaceLogo.${workspaceUUID}`, file, {
             upsert: true,
           });
-        if (error) throw new Error();
-        filePath = data.path;
+        if (storageResult.error) throw new Error("Logo upload failed");
+        filePath = storageResult.data.path;
       } catch (error) {
         toast({
           variant: "destructive",
-          title:
-            "Error! Could not upload your workspace logo, try again later.",
+          title: "Error",
+          description: "Could not upload your workspace logo, try again later!",
         });
       }
     }
-    try {
-      const newWorkspace: workspace = {
-        data: null,
-        createdAt: new Date().toISOString(),
-        iconId: selectedEmoji,
-        id: workspaceUUID,
-        inTrash: "",
-        title: value.workspaceName,
-        workspaceOwner: user.id,
-        logo: filePath || null,
-        bannerUrl: "",
-      };
-      const { data, error: createError } = await createWorkspace(newWorkspace);
-      if (createError) {
-        throw new Error();
-      }
-      dispatch({
-        type: "ADD_WORKSPACE",
-        payload: { ...newWorkspace, folders: [] },
-      });
 
+    const newWorkspace: Omit<Workspace, "workspaceOwner"> = {
+      data: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      iconId: selectedEmoji,
+      id: workspaceUUID,
+      inTrash: null,
+      title: value.workspaceName,
+      logo: filePath,
+      bannerUrl: null,
+      lastModifiedBy: useAppStore.getState().currentClientMutationId,
+    };
+    const createWorkspaceResult = await createWorkspace(newWorkspace);
+    if (!createWorkspaceResult.data) {
       toast({
-        title: "Workspace Created",
-        description: `${newWorkspace.title} has been created successfully.`,
-      });
-
-      router.replace(`/dashboard/${newWorkspace.id}`);
-    } catch (error) {
-      toast({
+        title: "Error",
         variant: "destructive",
-        title: "Could not create your workspace",
-        description:
-          "Oops! Something went wrong and we couldn't create your workspace. Try again or come back later.",
+        description: createWorkspaceResult.error,
       });
-    } finally {
-      reset();
+      return;
     }
+    addWorkspace({ ...createWorkspaceResult.data, folders: [] });
+    toast({
+      title: "Workspace Created",
+      description: `${createWorkspaceResult.data.title} has been created successfully.`,
+    });
+    router.replace(`/dashboard/${createWorkspaceResult.data.id}`);
+    setOpen(true);
+    reset();
   };
 
   return (
-    <Card
-      className="w-[800px]
-      h-screen
-      sm:h-auto
-  "
-    >
+    <Card className="w-[800px] h-[100dvh] sm:h-auto">
       <CardHeader>
         <CardTitle>Create A Workspace</CardTitle>
         <CardDescription>
-          Lets create a private workspace to get you started.You can add
+          Lets create a private workspace to get you started. You can add
           collaborators later from the workspace settings tab.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="flex flex-col gap-4">
-            <div
-              className="flex
-            items-center
-            gap-4"
-            >
-              <div className="text-5xl">
-                <EmojiPicker getValue={(emoji) => setSelectedEmoji(emoji)}>
-                  {selectedEmoji}
+            <div className="flex items-center gap-4">
+              <TooltipComponent
+                asChild
+                message="Select Emoji"
+                aria-label="Select Emoji"
+              >
+                <EmojiPicker
+                  asChild
+                  getValue={(emoji) => setSelectedEmoji(emoji)}
+                  aria-label="Select Emoji"
+                >
+                  <Button
+                    variant="ghost"
+                    className="text-5xl hover:bg-muted py-2 px-0 w-auto h-auto focus-visible:ring-offset-0"
+                  >
+                    {selectedEmoji}
+                  </Button>
                 </EmojiPicker>
-              </div>
-              <div className="w-full ">
+              </TooltipComponent>
+              <div className="w-full flex flex-col gap-1">
                 <Label
                   htmlFor="workspaceName"
-                  className="text-sm
-                  text-muted-foreground
-                "
+                  className="text-sm text-muted-foreground"
                 >
                   Name
                 </Label>
                 <Input
+                  {...register("workspaceName", {
+                    required: "Workspace name is required",
+                  })}
                   id="workspaceName"
                   type="text"
                   placeholder="Workspace Name"
                   disabled={isLoading}
-                  {...register("workspaceName", {
-                    required: "Workspace name is required",
-                  })}
                   spellCheck={false}
                 />
                 <small className="text-red-600">
@@ -167,44 +160,34 @@ const DashboardSetup: React.FC<DashboardSetupProps> = ({
                 </small>
               </div>
             </div>
-            <div>
-              <Label
-                htmlFor="logo"
-                className="text-sm
-                  text-muted-foreground
-                "
-              >
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="logo" className="text-sm text-muted-foreground">
                 Workspace Logo
               </Label>
               <Input
+                {...register("logo", {
+                  required: false,
+                })}
                 id="logo"
                 type="file"
                 accept="image/*"
                 placeholder="Workspace Name"
                 disabled={isLoading || subscription?.status !== "active"}
-                {...register("logo", {
-                  required: false,
-                })}
               />
               <small className="text-red-600">
                 {errors?.logo?.message?.toString()}
               </small>
               {subscription?.status !== "active" && (
-                <small
-                  className="
-                  text-muted-foreground
-                  block
-              "
-                >
+                <small className="text-muted-foreground block">
                   To customize your workspace, you need to be on a Pro Plan
                 </small>
               )}
             </div>
-            <div className="self-end">
-              <Button disabled={isLoading} type="submit">
-                {!isLoading ? "Create Workspace" : <Loader />}
-              </Button>
-            </div>
+          </div>
+          <div className="ml-auto mt-2 max-w-max">
+            <Button disabled={isLoading} type="submit">
+              {!isLoading ? "Create Workspace" : <Loader />}
+            </Button>
           </div>
         </form>
       </CardContent>

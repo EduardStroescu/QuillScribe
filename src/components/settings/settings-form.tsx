@@ -1,35 +1,27 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { useToast } from "../ui/use-toast";
-import { useAppState } from "@/lib/providers/state-provider";
-import { User, workspace } from "@/lib/supabase/supabase.types";
-import { useSupabaseUser } from "@/lib/providers/supabase-user-provider";
-import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import {
-  Briefcase,
-  CreditCard,
-  ExternalLink,
-  Lock,
-  LogOut,
-  Plus,
-  Share,
-  User as UserIcon,
-} from "lucide-react";
+  type Dispatch,
+  type FC,
+  type SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Collaborator } from "@/lib/supabase/supabase.types";
+import { useSupabaseUser } from "@/lib/providers/supabase-user-provider";
+import { useParams, useRouter } from "next/navigation";
+import { Briefcase, Lock, Plus, Share, Users, X } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import {
   addCollaborators,
   deleteWorkspace,
-  findUser,
-  getCollaborators,
   removeCollaborators,
+  transferWorkspaceOwnership,
   updateWorkspace,
-  uploadUserProfilePicture,
-} from "@/lib/supabase/queries";
-import { v4 } from "uuid";
+} from "@/lib/supabase/actions";
 import {
   Select,
   SelectContent,
@@ -53,77 +45,151 @@ import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Alert, AlertDescription } from "../ui/alert";
-import QuillScribeProfileIcon from "../icons/quillScribeProfileIcon";
-import LogoutButton from "../global/logout-button";
-import Link from "next/link";
 import { useSubscriptionModal } from "@/lib/providers/subscription-modal-provider";
-import { findWorkspaceById, postData } from "@/lib/utils";
+import { toast } from "../ui/use-toast";
+import {
+  selectWorkspaceById,
+  useAppStore,
+  useAppStoreActions,
+} from "@/lib/stores/app-store";
+import { useShallow } from "zustand/react/shallow";
+import { getSupabaseImageUrl } from "@/lib/utils";
+import { uploadFile } from "@/lib/supabase/uploadFile";
+import QuillScribeProfileIcon from "../icons/quillScribeProfileIcon";
+import OwnerSearch from "../global/owner-search";
+import { Skeleton } from "../ui/skeleton";
 
-const SettingsForm = () => {
-  const { toast } = useToast();
-  const { user, subscription } = useSupabaseUser();
-  const { open, setOpen } = useSubscriptionModal();
+interface SettingsFormProps {
+  setOpen?: Dispatch<SetStateAction<boolean>>;
+}
+
+const SettingsForm: FC<SettingsFormProps> = ({
+  setOpen: setOpenSettingsDialog,
+}) => {
   const router = useRouter();
-  const supabase = createClientComponentClient();
-  const { state, workspaceId, dispatch } = useAppState();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+
+  const { user, subscription } = useSupabaseUser();
+  const { setOpen: setOpenSubscriptionModal } = useSubscriptionModal();
+
+  const currWorkspace = useAppStore(
+    useShallow(selectWorkspaceById(workspaceId))
+  );
+  const {
+    updateWorkspace: updateStateWorkspace,
+    deleteWorkspace: deleteStateWorkspace,
+  } = useAppStoreActions();
   const [permissions, setPermissions] = useState("private");
-  const [collaborators, setCollaborators] = useState<User[] | []>([]);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [openAlertMessage, setOpenAlertMessage] = useState(false);
-  const [workspaceDetails, setWorkspaceDetails] = useState<workspace>();
   const titleTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
-  const [userProfilePicture, setUserProfilePicture] = useState("");
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [loadingPortal, setLoadingPortal] = useState(false);
+  const [owner, setOwner] = useState<Collaborator>({
+    id: "",
+    email: "",
+    avatarUrl: "",
+    updatedAt: "",
+  });
 
-  const redirectToCustomerPortal = async () => {
-    setLoadingPortal(true);
-    try {
-      const { url, error } = await postData({
-        url: "/api/create-portal-link",
+  const isDemoUser =
+    user?.email === process.env.NEXT_PUBLIC_PRO_DEMO_EMAIL ||
+    user?.email === process.env.NEXT_PUBLIC_FREE_DEMO_EMAIL;
+
+  const transferOwnership = async (owner: Collaborator) => {
+    if (isDemoUser) {
+      toast({
+        title: "Error",
+        description: "Cannot transfer ownership in demo accounts.",
+        variant: "destructive",
       });
-      window.location.assign(url);
-    } catch (error) {
-      setLoadingPortal(false);
-    }
-    setLoadingPortal(false);
-  };
-
-  //add collborators
-  const addCollaborator = async (profile: User) => {
-    if (!workspaceId) return;
-    if (subscription?.status !== "active" && collaborators.length >= 2) {
-      setOpen(true);
       return;
     }
-    await addCollaborators([profile], workspaceId);
-    setCollaborators([...collaborators, profile]);
+    if (currWorkspace?.workspaceOwner !== user?.id) {
+      toast({
+        title: "Error",
+        description: "Only the workspace owner can transfer ownership.",
+      });
+      return;
+    }
+    const transferResponse = await transferWorkspaceOwnership(
+      workspaceId,
+      owner.id
+    );
+    if (transferResponse.error) {
+      toast({ title: "Error", description: transferResponse.error });
+      return;
+    }
+    setOpenSettingsDialog?.(false);
+    updateStateWorkspace(workspaceId, { workspaceOwner: owner.id });
+    toast({ title: "Success", description: "Ownership transferred." });
   };
 
-  //remove collaborators
-  const removeCollaborator = async (user: User) => {
+  const addCollaborator = async (profile: Collaborator) => {
+    if (!currWorkspace?.id) return;
+    if (subscription?.status !== "active" && collaborators.length >= 2) {
+      setOpenSubscriptionModal(true);
+      return;
+    }
+    const addResponse = await addCollaborators([profile], currWorkspace.id);
+    if (addResponse.error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: addResponse.error,
+      });
+      return;
+    }
+    setCollaborators([...collaborators, profile]);
+    toast({
+      title: "Success",
+      description: "Collaborator added.",
+    });
+  };
+
+  const removeCollaborator = async (user: Collaborator) => {
     if (!workspaceId) return;
     if (collaborators.length === 1) {
       setPermissions("private");
     }
-    await removeCollaborators([user], workspaceId);
+    const removeResponse = await removeCollaborators([user], workspaceId);
+    if (removeResponse.error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: removeResponse.error,
+      });
+      return;
+    }
+    toast({ title: "Success", description: "Collaborator removed." });
     setCollaborators(
       collaborators.filter((collaborator) => collaborator.id !== user.id)
     );
-    router.refresh();
   };
 
-  //onChange name
   const workspaceNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!workspaceId || !e.target.value) return;
-    dispatch({
-      type: "UPDATE_WORKSPACE",
-      payload: { workspace: { title: e.target.value }, workspaceId },
-    });
+    const currWorkspaceTitle = currWorkspace?.title;
+    updateStateWorkspace(workspaceId, { title: e.target.value });
     if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
     titleTimerRef.current = setTimeout(async () => {
-      await updateWorkspace({ title: e.target.value }, workspaceId);
-    }, 500);
+      const updateResponse = await updateWorkspace(
+        {
+          title: e.target.value,
+          lastModifiedBy: useAppStore.getState().currentClientMutationId,
+        },
+        workspaceId
+      );
+      if (currWorkspaceTitle && updateResponse.error) {
+        updateStateWorkspace(workspaceId, { title: currWorkspaceTitle });
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: updateResponse.error,
+        });
+        return;
+      }
+      toast({ title: "Success", description: "Title updated." });
+    }, 850);
   };
 
   const onChangeWorkspaceLogo = async (
@@ -132,99 +198,168 @@ const SettingsForm = () => {
     if (!workspaceId) return;
     const file = e.target.files?.[0];
     if (!file) return;
-    const uuid = v4();
+
     setUploadingLogo(true);
-    const { data, error } = await supabase.storage
-      .from("workspace-logos")
-      .upload(`workspaceLogo.${uuid}`, file, {
-        upsert: true,
+    const { publicPath: logo, error: logoUploadError } = await uploadFile(
+      "workspace-logos",
+      file,
+      `workspaceLogo.${workspaceId}`
+    );
+    if (logoUploadError) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not upload the logo. Please try again later!",
       });
+      return;
+    }
 
-    if (!error) {
-      dispatch({
-        type: "UPDATE_WORKSPACE",
-        payload: { workspace: { logo: data.path }, workspaceId },
-      });
-      await updateWorkspace({ logo: data.path }, workspaceId);
-      setUploadingLogo(false);
-    }
-  };
+    const { data: updateResponse, error } = await updateWorkspace(
+      {
+        logo: logo,
+        lastModifiedBy: useAppStore.getState().currentClientMutationId,
+      },
+      workspaceId
+    );
 
-  const onChangeProfilePicture = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (!user) return;
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const uuid = v4();
-    setUploadingProfilePic(true);
-    const response = await findUser(user.id);
-    if (response?.avatarUrl) {
-      await supabase.storage.from("avatars").remove([response?.avatarUrl]);
-    }
-    const { data, error } = await supabase.storage
-      .from("avatars")
-      .upload(`avatar.${user.id}?v=${uuid}`, file, {
-        upsert: true,
+    if (updateResponse) {
+      updateStateWorkspace(workspaceId, { logo: updateResponse.logo });
+      toast({ title: "Success", description: "Logo updated." });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error,
       });
-    if (!error) {
-      await uploadUserProfilePicture(user.id, data.path);
-      const avatarPath = supabase.storage
-        .from("avatars")
-        .getPublicUrl(data.path)?.data.publicUrl;
-      setUserProfilePicture(avatarPath);
-      setUploadingProfilePic(false);
-      router.refresh();
     }
+    setUploadingLogo(false);
   };
 
   const onClickAlertConfirm = async () => {
     if (!workspaceId) return;
     if (collaborators.length > 0) {
-      await removeCollaborators(collaborators, workspaceId);
+      const removeResponse = await removeCollaborators(
+        collaborators,
+        workspaceId
+      );
+      if (removeResponse.error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: removeResponse.error,
+        });
+        return;
+      }
     }
+    toast({ title: "Success", description: "Workspace is now private." });
     setPermissions("private");
     setOpenAlertMessage(false);
   };
 
   const onPermissionsChange = (val: string) => {
+    if (currWorkspace?.workspaceOwner !== user?.id) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Only the workspace owner can change permissions.",
+      });
+      return;
+    }
     if (val === "private") {
       setOpenAlertMessage(true);
     } else setPermissions(val);
   };
 
-  useEffect(() => {
-    const showingWorkspace = findWorkspaceById(state, workspaceId);
-    if (showingWorkspace) setWorkspaceDetails(showingWorkspace);
-  }, [workspaceId, state]);
+  const onDeleteWorkspace = async () => {
+    if (!currWorkspace?.id) return;
+    if (currWorkspace?.workspaceOwner !== user?.id) {
+      toast({
+        title: "Error",
+        description: "Only the workspace owner can delete the workspace.",
+      });
+      return;
+    }
+    const deleteResponse = await deleteWorkspace(currWorkspace.id);
+    if (deleteResponse.error) {
+      toast({
+        title: "Error",
+        description: deleteResponse.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: "Success", description: "Workspace deleted." });
+    deleteStateWorkspace(workspaceId);
+    setOpenSettingsDialog?.(false);
+    router.replace("/dashboard");
+  };
+
+  const removeLogo = async () => {
+    if (!currWorkspace?.logo) return;
+    const currLogo = currWorkspace.logo;
+    updateStateWorkspace(workspaceId, { logo: null });
+    const removeResponse = await updateWorkspace({ logo: null }, workspaceId);
+    if (removeResponse.error) {
+      updateStateWorkspace(workspaceId, { logo: currLogo });
+      toast({
+        title: "Error",
+        description: removeResponse.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: "Success", description: "Logo removed." });
+  };
 
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!currWorkspace?.workspaceOwner) return;
+    const fetchOwner = async () => {
+      try {
+        const response = await fetch(
+          `/api/users/${currWorkspace.workspaceOwner}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
+        if (!response.ok) throw new Error((await response.json()).error);
+        const data: Collaborator = await response.json();
+        if (data) {
+          setOwner(data);
+        }
+      } catch {
+        return;
+      }
+    };
+    fetchOwner();
+  }, [currWorkspace?.workspaceOwner]);
+
+  useEffect(() => {
+    if (!currWorkspace?.id) return;
     const fetchCollaborators = async () => {
-      const response = await getCollaborators(workspaceId);
-      if (response.length) {
-        setPermissions("shared");
-        setCollaborators(response);
+      try {
+        const response = await fetch(`/api/collaborators/${currWorkspace.id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+        if (!response.ok) throw new Error((await response.json()).error);
+        const data: Collaborator[] = await response.json();
+        if (data.length) {
+          setPermissions("shared");
+          setCollaborators(data);
+        }
+      } catch {
+        return;
       }
     };
     fetchCollaborators();
-  }, [workspaceId]);
-
-  useEffect(() => {
-    if (user?.id) {
-      async function getUserDetails() {
-        if (user === null) return;
-        const response = await findUser(user.id);
-        if (response && response.avatarUrl) {
-          const avatarPath = supabase.storage
-            .from("avatars")
-            .getPublicUrl(response.avatarUrl)?.data.publicUrl;
-          setUserProfilePicture(avatarPath);
-        }
-      }
-      getUserDetails();
-    }
-  }, [user?.id, user, supabase.storage]);
+  }, [currWorkspace?.id]);
 
   return (
     <div className="flex gap-4 flex-col">
@@ -238,11 +373,55 @@ const SettingsForm = () => {
           htmlFor="workspaceName"
           className="text-sm text-muted-foreground"
         >
+          Owner
+        </Label>
+        <div className="flex items-center">
+          <Avatar>
+            <AvatarImage
+              src={getSupabaseImageUrl(
+                "avatars",
+                owner.avatarUrl,
+                owner.updatedAt
+              )}
+              alt={`${owner?.email}'s Avatar`}
+            />
+            <AvatarFallback>
+              <QuillScribeProfileIcon />
+            </AvatarFallback>
+          </Avatar>
+          <div className="w-full flex flex-col ml-6 gap-2">
+            <small className="text-muted-foreground text-sm">
+              {owner.email?.length ? (
+                owner.email
+              ) : (
+                <Skeleton className="w-1/2 h-5 bg-muted-foreground" />
+              )}
+            </small>
+            <OwnerSearch
+              getOwner={(owner) => {
+                transferOwnership(owner);
+              }}
+            >
+              <Button
+                disabled={currWorkspace?.workspaceOwner !== user?.id}
+                size="sm"
+                className="text-sm flex gap-2 items-center max-w-min"
+              >
+                <Users size={16} />
+                Transfer Ownership
+              </Button>
+            </OwnerSearch>
+          </div>
+        </div>
+        <Label
+          htmlFor="workspaceName"
+          className="text-sm text-muted-foreground"
+        >
           Name
         </Label>
         <Input
           name="workspaceName"
-          value={workspaceDetails ? workspaceDetails.title : ""}
+          value={currWorkspace?.title ?? ""}
           placeholder="Workspace Name"
           onChange={workspaceNameChange}
           spellCheck={false}
@@ -253,37 +432,44 @@ const SettingsForm = () => {
         >
           Workspace Logo
         </Label>
-        <Input
-          name="workspaceLogo"
-          type="file"
-          accept="image/*"
-          placeholder="Workspace Logo"
-          onChange={onChangeWorkspaceLogo}
-          disabled={uploadingLogo || subscription?.status !== "active"}
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            name="workspaceLogo"
+            type="file"
+            accept="image/*"
+            placeholder="Workspace Logo"
+            onChange={onChangeWorkspaceLogo}
+            disabled={uploadingLogo || subscription?.status !== "active"}
+          />
+          <Button
+            disabled={!currWorkspace?.logo || uploadingLogo}
+            variant="destructive"
+            className="text-destructive-foreground min-w-max"
+            onClick={removeLogo}
+          >
+            Remove Logo
+          </Button>
+        </div>
         {subscription?.status !== "active" && (
           <small className="text-muted-foreground">
             To customize your workspace you need to be on a Pro Plan
           </small>
         )}
-      </div>
-      <>
-        <Label htmlFor="permissions">Permissions</Label>
-        <Select onValueChange={onPermissionsChange} value={permissions}>
+        <Label htmlFor="permissions" className="text-sm text-muted-foreground">
+          Permissions
+        </Label>
+        <Select
+          onValueChange={onPermissionsChange}
+          value={permissions}
+          disabled={currWorkspace?.workspaceOwner !== user?.id}
+        >
           <SelectTrigger className="w-full h-26">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-w-[var(--radix-select-trigger-width)]">
             <SelectGroup>
               <SelectItem value="private">
-                <div
-                  className="p-2
-                  flex
-                  gap-4
-                  justify-center
-                  items-center
-                "
-                >
+                <div className="p-2 flex gap-4 justify-center items-center">
                   <Lock />
                   <article className="text-left flex flex-col">
                     <span>Private</span>
@@ -296,7 +482,7 @@ const SettingsForm = () => {
               </SelectItem>
               <SelectItem value="shared">
                 <div className="p-2 flex gap-4 justify-center items-center">
-                  <Share></Share>
+                  <Share />
                   <article className="text-left flex flex-col">
                     <span>Shared</span>
                     <span>You can invite collaborators.</span>
@@ -308,74 +494,51 @@ const SettingsForm = () => {
         </Select>
 
         {permissions === "shared" && (
-          <div>
+          <div className="w-full flex flex-col">
             <CollaboratorSearch
               existingCollaborators={collaborators}
               getCollaborator={(user) => {
                 addCollaborator(user);
               }}
             >
-              <div className="inline-flex items-center justify-center font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 whitespace-nowrap bg-primary text-primary-foreground shadow-2xl shadow-indigo-600/50 rounded-lg text-sm my-4">
-                <Plus />
+              <Button size="sm" className="text-sm flex gap-2 items-center">
+                <Plus size="16" />
                 Add Collaborators
-              </div>
+              </Button>
             </CollaboratorSearch>
-            <div className="mt-2">
+            <div className="mt-2 flex flex-col gap-2">
               <span className="text-sm text-muted-foreground">
                 Collaborators {collaborators.length || ""}
               </span>
-              <ScrollArea
-                className="
-            h-[120px]
-            overflow-y-scroll
-            w-full
-            rounded-md
-            border
-            border-muted-foreground/20"
-              >
+              <ScrollArea className="h-[120px] overflow-y-auto w-full rounded-md border">
                 {collaborators.length ? (
-                  collaborators.map((c) => {
-                    const avatarUrl = c?.avatarUrl
-                      ? supabase.storage
-                          .from("avatars")
-                          .getPublicUrl(c?.avatarUrl).data.publicUrl
-                      : "";
+                  collaborators.map((collaborator) => {
                     return (
                       <div
-                        className="
-                      sm:w-[calc(100%-100px)]
-                      sm:px-2
-                      py-1 flex
-                      justify-between
-                      items-center
-                "
-                        key={c.id}
+                        className="w-[calc(100%-0.5rem)] px-2 py-1 flex justify-between items-center"
+                        key={collaborator.id}
                       >
                         <div className="flex gap-2 items-center">
                           <Avatar>
                             <AvatarImage
-                              src={avatarUrl}
-                              alt="Collaborator Avatar"
+                              src={getSupabaseImageUrl(
+                                "avatars",
+                                collaborator.avatarUrl,
+                                collaborator.updatedAt
+                              )}
+                              alt={`${collaborator?.email}'s Avatar`}
                             />
                             <AvatarFallback>
-                              {c?.email?.slice(0, 2).toUpperCase()}
+                              {collaborator?.email?.slice(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <div
-                            className="text-sm 
-                          text-muted-foreground
-                          overflow-hidden
-                          overflow-ellipsis
-                          sm:w-[300px]
-                          w-[140px]
-                        "
-                          >
-                            {c.email}
+                          <div className="text-sm text-muted-foreground overflow-hidden overflow-ellipsis sm:w-[300px] w-[140px]">
+                            {collaborator.email}
                           </div>
                         </div>
                         <Button
                           variant="secondary"
-                          onClick={() => removeCollaborator(c)}
+                          onClick={() => removeCollaborator(collaborator)}
                         >
                           Remove
                         </Button>
@@ -383,16 +546,7 @@ const SettingsForm = () => {
                     );
                   })
                 ) : (
-                  <div
-                    className="absolute
-                  right-0 left-0
-                  top-0
-                  bottom-0
-                  flex
-                  justify-center
-                  items-center
-                "
-                  >
+                  <div className="absolute right-0 left-0 top-0 bottom-0 flex justify-center items-center">
                     <span className="text-muted-foreground text-sm">
                       You have no collaborators
                     </span>
@@ -402,6 +556,8 @@ const SettingsForm = () => {
             </div>
           </div>
         )}
+      </div>
+      {currWorkspace?.workspaceOwner === user?.id && (
         <Alert variant={"destructive"}>
           <AlertDescription>
             Warning! Deleting you workspace will permanantly delete all data
@@ -411,104 +567,13 @@ const SettingsForm = () => {
             type="submit"
             size={"sm"}
             variant={"destructive"}
-            className="mt-4 
-            text-sm
-            bg-destructive/40 
-            border-2 
-            border-destructive"
-            onClick={async () => {
-              if (!workspaceId) return;
-              await deleteWorkspace(workspaceId);
-              toast({ title: "Successfully deleted your workspace" });
-              dispatch({ type: "DELETE_WORKSPACE", payload: workspaceId });
-              router.replace("/dashboard");
-            }}
+            className="mt-4 text-sm"
+            onClick={onDeleteWorkspace}
           >
             Delete Workspace
           </Button>
         </Alert>
-        <p className="flex items-center gap-2 mt-3">
-          <UserIcon size={20} /> Profile
-        </p>
-        <Separator />
-        <div className="flex items-center">
-          <Avatar>
-            <AvatarImage src={userProfilePicture} alt="User Avatar" />
-            <AvatarFallback>
-              <QuillScribeProfileIcon />
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col ml-6">
-            <small className="text-muted-foreground cursor-not-allowed">
-              {user ? user.email : ""}
-            </small>
-            <Label
-              htmlFor="profilePicture"
-              className="text-sm text-muted-foreground"
-            >
-              Profile Picture
-            </Label>
-            <Input
-              name="profilePicture"
-              type="file"
-              accept="image/*"
-              placeholder="Profile Picture"
-              onChange={onChangeProfilePicture}
-              disabled={uploadingProfilePic}
-            />
-          </div>
-        </div>
-        <div className="flex flex-row items-center">
-          <LogoutButton
-            className={
-              "flex flex-row gap-2 items-center min-w-fit px-4 mx-auto"
-            }
-          >
-            <LogOut />
-            <p>Log Out</p>
-          </LogoutButton>
-        </div>
-        <p className="flex items-center gap-2">
-          <CreditCard size={20} /> Billing & Plan
-        </p>
-        <Separator />
-        <p className="text-muted-foreground">
-          You are currently on the{" "}
-          {subscription?.status === "active" ? "Pro" : "Free"} Plan
-        </p>
-        <Link
-          href="/#pricing"
-          className="text-muted-foreground flex flex-row items-center gap-2"
-        >
-          View Plans <ExternalLink size={16} />
-        </Link>
-        {subscription?.status === "active" ? (
-          <div>
-            <Button
-              type="button"
-              size="sm"
-              variant={"secondary"}
-              disabled={loadingPortal}
-              className="text-sm"
-              onClick={redirectToCustomerPortal}
-            >
-              Manage Subscription
-            </Button>
-          </div>
-        ) : (
-          <div>
-            <Button
-              type="button"
-              size="sm"
-              variant={"secondary"}
-              className="text-sm"
-              onClick={() => setOpen(true)}
-            >
-              Start Plan
-            </Button>
-          </div>
-        )}
-      </>
+      )}
       <AlertDialog open={openAlertMessage}>
         <AlertDialogContent>
           <AlertDialogHeader>

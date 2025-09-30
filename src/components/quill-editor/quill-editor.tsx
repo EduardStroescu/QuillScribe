@@ -1,69 +1,58 @@
 "use client";
 
-import { useAppState } from "@/lib/providers/state-provider";
-import { File, Folder, workspace } from "@/lib/supabase/supabase.types";
-import React, { useCallback, useState } from "react";
 import "quill/dist/quill.snow.css";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import {
-  deleteFile,
-  deleteFolder,
   updateFile,
   updateFolder,
   updateWorkspace,
-} from "@/lib/supabase/queries";
-import { useRouter } from "next/navigation";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Badge } from "../ui/badge";
+} from "@/lib/supabase/actions";
 import Image from "next/image";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import EmojiPicker from "../global/emoji-picker";
 import BannerUpload from "../banner-upload/banner-upload";
-import { XCircleIcon } from "lucide-react";
+import { Plus, XCircleIcon } from "lucide-react";
 import { TOOLBAR_OPTIONS } from "@/lib/const/quillToolbarOptions";
-import { useRealtimeQuill } from "@/lib/hooks/useRealtimeQuill";
-import { useDirectoryDetails } from "@/lib/hooks/useDirectoryDetails";
-import { useDirectoryBreadcumbs } from "@/lib/hooks/useDirectoryBreadcrumbs";
+import { toast } from "../ui/use-toast";
+import { useQuillContext } from "@/lib/providers/quill-editor-provider";
+import {
+  type appFoldersType,
+  type appWorkspacesType,
+  useAppStore,
+  useAppStoreActions,
+} from "@/lib/stores/app-store";
+import QuillTrashBanner, { QuillTrashBannerProps } from "./quill-trash-banner";
 import { useInitialQuillContent } from "@/lib/hooks/useInitialQuillContent";
+import TooltipComponent from "../global/tooltip-component";
+import { getSupabaseImageUrl, isFile, isFolder } from "@/lib/utils";
+import { type File } from "@/lib/supabase/supabase.types";
 
-interface QuillEditorProps {
-  dirDetails: File | Folder | workspace;
-  fileId: string;
-  dirType: "workspace" | "folder" | "file";
-}
-
-const QuillEditor: React.FC<QuillEditorProps> = ({
-  dirDetails,
-  dirType,
-  fileId,
-}) => {
-  const supabase = createClientComponentClient();
-  const { workspaceId, folderId, dispatch } = useAppState();
-  const router = useRouter();
-  const [quill, setQuill] = useState<any>(null);
+const QuillEditor = () => {
+  const { quill, setQuill, dirDetails, dirType, fileId } = useQuillContext();
+  const {
+    updateFile: updateStateFile,
+    updateFolder: updateStateFolder,
+    updateWorkspace: updateStateWorkspace,
+  } = useAppStoreActions();
   const [deletingBanner, setDeletingBanner] = useState(false);
 
-  const details = useDirectoryDetails({ dirDetails, dirType, fileId });
-  const breadCrumbs = useDirectoryBreadcumbs();
+  // Quill Initialisation
+  const quillWrapperRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const quillWrapper = quillWrapperRef.current;
+    if (!quillWrapper || typeof window === "undefined") return;
 
-  //Quill Initialisation
-  const wrapperRef = useCallback(async (wrapper: any) => {
-    if (typeof window !== "undefined") {
-      if (wrapper === null) return;
-      wrapper.innerHTML = "";
+    const init = async () => {
+      quillWrapper.innerHTML = "";
       const editor = document.createElement("div");
-      wrapper.append(editor);
+      quillWrapper.append(editor);
       const Quill = (await import("quill")).default;
       const QuillCursors = (await import("quill-cursors")).default;
       Quill.register("modules/cursors", QuillCursors, true);
+
       const q = new Quill(editor, {
         theme: "snow",
+        bounds: editor,
         modules: {
           toolbar: TOOLBAR_OPTIONS,
           cursors: {
@@ -72,388 +61,315 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
         },
       });
       setQuill(q);
-    }
-  }, []);
+    };
 
-  //Fetch initial quill content
-  useInitialQuillContent({ dirType, fileId, quill });
+    init();
 
-  //Update quill content and cursors between collaborators
-  const { collaborators, saving, isConnected } = useRealtimeQuill({
-    quill,
-    fileId,
-    dirType,
-    details,
-  });
+    return () => {
+      setQuill(null);
+    };
+  }, [setQuill]);
 
-  const restoreFileHandler = async () => {
-    if (dirType === "file") {
-      if (!folderId || !workspaceId) return;
-      dispatch({
-        type: "UPDATE_FILE",
-        payload: { file: { inTrash: "" }, fileId, folderId, workspaceId },
-      });
-      await updateFile({ inTrash: "" }, fileId);
-    }
-    if (dirType === "folder") {
-      if (!workspaceId) return;
-      dispatch({
-        type: "UPDATE_FOLDER",
-        payload: { folder: { inTrash: "" }, folderId: fileId, workspaceId },
-      });
-      await updateFolder({ inTrash: "" }, fileId);
-    }
-  };
-
-  const deleteFileHandler = async () => {
-    if (dirType === "file") {
-      if (!folderId || !workspaceId) return;
-      dispatch({
-        type: "DELETE_FILE",
-        payload: { fileId, folderId, workspaceId },
-      });
-      await deleteFile(fileId);
-      router.replace(`/dashboard/${workspaceId}`);
-    }
-    if (dirType === "folder") {
-      if (!workspaceId) return;
-      dispatch({
-        type: "DELETE_FOLDER",
-        payload: { folderId: fileId, workspaceId },
-      });
-      await deleteFolder(fileId);
-      router.replace(`/dashboard/${workspaceId}`);
-    }
-  };
+  // Sync initial quill content
+  useInitialQuillContent({ quill, dirDetails });
 
   const iconOnChange = async (icon: string) => {
-    if (!fileId) return;
-    if (dirType === "workspace") {
-      dispatch({
-        type: "UPDATE_WORKSPACE",
-        payload: { workspace: { iconId: icon }, workspaceId: fileId },
+    if (!dirDetails) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not update icon. Please try again later!",
       });
-      await updateWorkspace({ iconId: icon }, fileId);
+      return;
     }
-    if (dirType === "folder") {
-      if (!workspaceId) return;
-      dispatch({
-        type: "UPDATE_FOLDER",
-        payload: {
-          folder: { iconId: icon },
-          workspaceId,
-          folderId: fileId,
-        },
-      });
-      await updateFolder({ iconId: icon }, fileId);
-    }
-    if (dirType === "file") {
-      if (!workspaceId || !folderId) return;
+    if (icon === dirDetails.iconId) return;
 
-      dispatch({
-        type: "UPDATE_FILE",
-        payload: { file: { iconId: icon }, workspaceId, folderId, fileId },
+    const curr = dirDetails;
+
+    // Map dirType → handler
+    const handlers: Record<
+      typeof dirType,
+      (() => Promise<{ error: string | null }>) | undefined
+    > = {
+      workspace: async () => {
+        updateStateWorkspace(curr.id, { iconId: icon });
+        const { error } = await updateWorkspace(
+          {
+            iconId: icon,
+            lastModifiedBy: useAppStore.getState().currentClientMutationId,
+          },
+          curr.id
+        );
+        if (error) updateStateWorkspace(curr.id, { iconId: curr.iconId });
+
+        return { error };
+      },
+      folder: isFolder(curr, dirType)
+        ? async () => {
+            updateStateFolder(curr.workspaceId, curr.id, { iconId: icon });
+            const { error } = await updateFolder(
+              {
+                iconId: icon,
+                lastModifiedBy: useAppStore.getState().currentClientMutationId,
+              },
+              curr.id
+            );
+            if (error)
+              updateStateFolder(curr.workspaceId, curr.id, {
+                iconId: curr.iconId,
+              });
+
+            return { error };
+          }
+        : undefined,
+      file: isFile(curr, dirType)
+        ? async () => {
+            updateStateFile(curr.workspaceId, curr.folderId, curr.id, {
+              iconId: icon,
+            });
+            const { error } = await updateFile(
+              {
+                iconId: icon,
+                lastModifiedBy: useAppStore.getState().currentClientMutationId,
+              },
+              curr.id
+            );
+            if (error)
+              updateStateFile(curr.workspaceId, curr.folderId, curr.id, {
+                iconId: curr.iconId,
+              });
+
+            return { error };
+          }
+        : undefined,
+    };
+
+    const handler = handlers[dirType];
+    if (!handler) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not update icon. Please try again later!",
       });
-      await updateFile({ iconId: icon }, fileId);
+      return;
+    }
+
+    const { error } = await handler();
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error,
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Icon updated.",
+      });
     }
   };
 
   const deleteBanner = async () => {
-    if (!fileId) return;
+    if (!dirDetails) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not delete banner. Please try again later!",
+      });
+      return;
+    }
+
     setDeletingBanner(true);
-    if (dirType === "file") {
-      if (!folderId || !workspaceId) return;
-      dispatch({
-        type: "UPDATE_FILE",
-        payload: { file: { bannerUrl: "" }, fileId, folderId, workspaceId },
+    const curr = dirDetails;
+
+    // Map dirType → handler
+    const handlers: Record<
+      typeof dirType,
+      (() => Promise<{ error: string | null }>) | undefined
+    > = {
+      file: isFile(curr, dirType)
+        ? async () => {
+            updateStateFile(curr.workspaceId, curr.folderId, curr.id, {
+              bannerUrl: null,
+            });
+            const { error } = await updateFile(
+              {
+                bannerUrl: null,
+                lastModifiedBy: useAppStore.getState().currentClientMutationId,
+              },
+              curr.id
+            );
+            if (error)
+              updateStateFile(curr.workspaceId, curr.folderId, curr.id, {
+                bannerUrl: curr.bannerUrl,
+              });
+
+            return { error };
+          }
+        : undefined,
+      folder: isFolder(curr, dirType)
+        ? async () => {
+            updateStateFolder(curr.workspaceId, curr.id, { bannerUrl: null });
+            const { error } = await updateFolder(
+              {
+                bannerUrl: null,
+                lastModifiedBy: useAppStore.getState().currentClientMutationId,
+              },
+              curr.id
+            );
+            if (error)
+              updateStateFolder(curr.workspaceId, curr.id, {
+                bannerUrl: curr.bannerUrl,
+              });
+
+            return { error };
+          }
+        : undefined,
+      workspace: async () => {
+        updateStateWorkspace(curr.id, { bannerUrl: null });
+        const { error } = await updateWorkspace(
+          {
+            bannerUrl: null,
+            lastModifiedBy: useAppStore.getState().currentClientMutationId,
+          },
+          curr.id
+        );
+        if (error)
+          updateStateWorkspace(curr.id, {
+            bannerUrl: curr.bannerUrl,
+          });
+
+        return { error };
+      },
+    };
+
+    const handler = handlers[dirType];
+    if (!handler) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not delete banner. Please try again later!",
       });
-      await supabase.storage.from("file-banners").remove([`banner-${fileId}`]);
-      await updateFile({ bannerUrl: "" }, fileId);
+      return;
     }
-    if (dirType === "folder") {
-      if (!workspaceId) return;
-      dispatch({
-        type: "UPDATE_FOLDER",
-        payload: { folder: { bannerUrl: "" }, folderId: fileId, workspaceId },
+
+    const { error } = await handler();
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error,
       });
-      await supabase.storage.from("file-banners").remove([`banner-${fileId}`]);
-      await updateFolder({ bannerUrl: "" }, fileId);
-    }
-    if (dirType === "workspace") {
-      dispatch({
-        type: "UPDATE_WORKSPACE",
-        payload: {
-          workspace: { bannerUrl: "" },
-          workspaceId: fileId,
-        },
+    } else {
+      toast({
+        title: "Success",
+        description: "Banner deleted.",
       });
-      await supabase.storage.from("file-banners").remove([`banner-${fileId}`]);
-      await updateWorkspace({ bannerUrl: "" }, fileId);
     }
+
     setDeletingBanner(false);
   };
 
+  const bannerProps: QuillTrashBannerProps = useMemo(() => {
+    if (dirType === "file") {
+      return { dirDetails: dirDetails as File, dirType: "file" };
+    } else if (dirType === "folder") {
+      return { dirDetails: dirDetails as appFoldersType, dirType: "folder" };
+    } else {
+      return {
+        dirDetails: dirDetails as appWorkspacesType,
+        dirType: "workspace",
+      };
+    }
+  }, [dirDetails, dirType]);
+
   return (
     <>
-      <div className="relative">
-        {details.inTrash && (
-          <article
-            className="py-2 
-          z-40 
-          bg-[#EB5757] 
-          flex  
-          md:flex-row 
-          flex-col 
-          justify-center 
-          items-center 
-          gap-4 
-          flex-wrap"
-          >
-            <div
-              className="flex 
-            flex-col 
-            md:flex-row 
-            gap-2 
-            justify-center 
-            items-center"
-            >
-              <span className="text-white">
-                This {dirType} is in the trash.
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="bg-transparent
-                border-white
-                text-white
-                hover:bg-white
-                hover:text-[#EB5757]
-                "
-                onClick={restoreFileHandler}
-              >
-                Restore
-              </Button>
-
-              <Button
-                size="sm"
-                variant="outline"
-                className="bg-transparent
-                border-white
-                text-white
-                hover:bg-white
-                hover:text-[#EB5757]
-                "
-                onClick={deleteFileHandler}
-              >
-                Delete
-              </Button>
-            </div>
-            <span className="text-sm text-white">{details.inTrash}</span>
-          </article>
+      <QuillTrashBanner {...bannerProps} />
+      <div
+        style={{
+          backgroundSize: "100px 100px, cover",
+        }}
+        className="relative flex w-[calc(100%-40px)] min-h-[140px] bg-sidebar bg-sidebar-grain bg-blend-overlay mx-auto my-4 overflow-hidden rounded-xl shadow-sidebar-accent shadow-md"
+      >
+        {dirDetails.bannerUrl && (
+          <>
+            <div className="bg-black/40 backdrop-blur absolute inset-0 z-10 rounded-xl" />
+            <Image
+              key={dirDetails.bannerUrl}
+              priority
+              src={getSupabaseImageUrl(
+                "file-banners",
+                dirDetails.bannerUrl,
+                dirDetails.updatedAt
+              )}
+              fill
+              sizes="(max-width: 768px) 100vw, 60vw"
+              className="w-full h-full object-cover absolute inset-0 rounded-xl animate-in fade-in slide-in-from-bottom-4 ease-in-out duration-500"
+              alt="Banner Image"
+            />
+          </>
         )}
-        <div
-          className="flex 
-        flex-col-reverse 
-        sm:flex-row 
-        sm:justify-between 
-        justify-center 
-        sm:items-center 
-        sm:p-2 
-        sm:border-border
-        sm:border-b-[1px]
-        p-8"
-        >
-          <div>
-            {breadCrumbs}
-            {isConnected ? (
-              <Badge
-                variant="secondary"
-                className="bg-emerald-600 hover:bg-emerald-700
-                text-white
-                ml-2
-                -translate-y-[2px]
-                "
-              >
-                Connected
-              </Badge>
-            ) : (
-              <Badge
-                variant="secondary"
-                className="bg-red-600 hover:bg-red-700
-              text-white
-              ml-2
-              -translate-y-[2px]
-              "
-              >
-                Connecting...
-              </Badge>
-            )}
+        <div className="z-20 flex gap-2 sm:gap-4 px-4 py-8">
+          <div className="flex flex-col justify-center">
+            <TooltipComponent
+              asChild
+              message="Select Emoji"
+              aria-label="Select Emoji"
+            >
+              <EmojiPicker asChild getValue={iconOnChange}>
+                <Button
+                  variant="ghost"
+                  className="text-6xl hover:bg-muted py-2 px-0 w-auto h-auto focus-visible:ring-offset-0"
+                >
+                  {dirDetails.iconId || "📄"}
+                </Button>
+              </EmojiPicker>
+            </TooltipComponent>
           </div>
-          <div className="flex items-center gap-4">
-            <p className="pr-2 text-sm">Active Collaborators:</p>
-            <div className="flex items-center justify-center h-10">
-              {collaborators?.map((collaborator) => (
-                <TooltipProvider key={collaborator.id}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Avatar
-                        className="
-                    -ml-3 
-                    bg-background 
-                    border-2 
-                    flex 
-                    items-center 
-                    justify-center
-                    border-primary 
-                    dark:border-white 
-                    h-8 
-                    w-8 
-                    rounded-full
-                    "
-                      >
-                        <AvatarImage
-                          src={
-                            collaborator.avatarUrl ? collaborator.avatarUrl : ""
-                          }
-                          alt="Collaborator Avatar"
-                          className="rounded-full"
-                        />
-                        <AvatarFallback>
-                          {collaborator.email.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </TooltipTrigger>
-                    <TooltipContent>{collaborator.email}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
-            </div>
-            {saving ? (
-              <Badge
-                variant="secondary"
-                className="bg-orange-600 hover:bg-orange-700
-                text-white
-                "
-              >
-                Saving...
-              </Badge>
-            ) : (
-              <Badge
-                variant="secondary"
-                className="bg-emerald-600 hover:bg-emerald-700
-              text-white
-              "
-              >
-                Saved
-              </Badge>
-            )}
+          <div className="flex flex-col items-start justify-center">
+            <span className="text-primary-foreground text-4xl sm:text-5xl font-bold">
+              {dirDetails.title || "Loading..."}
+            </span>
+            <span className="text-primary-foreground/70 text-lg sm:text-xl">
+              {dirType.toUpperCase()}
+            </span>
           </div>
+        </div>
+        <div className="absolute flex z-20 bottom-2 right-2 items-center justify-center gap-2">
+          <BannerUpload id={fileId} dirType={dirType}>
+            <Button
+              disabled={deletingBanner}
+              variant="ghost"
+              size="sm"
+              className="gap-2 flex item-center justify-center hover:bg-transparent px-2 text-sidebar-foreground hover:text-sidebar-accent-foreground h-auto py-1 focus-visible:ring-offset-0"
+            >
+              <Plus size={16} />
+              {dirDetails.bannerUrl ? "Update Banner" : "Add Banner"}
+            </Button>
+          </BannerUpload>
+          {dirDetails.bannerUrl && (
+            <Button
+              disabled={deletingBanner}
+              onClick={deleteBanner}
+              variant="ghost"
+              size="sm"
+              className="gap-2 flex item-center justify-center hover:bg-transparent px-2 text-sidebar-foreground hover:text-sidebar-accent-foreground h-auto py-1 focus-visible:ring-offset-0"
+            >
+              <XCircleIcon size={16} />
+              <span className="whitespace-nowrap font-normal">
+                Remove Banner
+              </span>
+            </Button>
+          )}
         </div>
       </div>
-      {details.bannerUrl && (
-        <div className="relative w-full h-[200px]">
-          <Image
-            src={
-              supabase.storage
-                .from("file-banners")
-                .getPublicUrl(details.bannerUrl).data.publicUrl
-            }
-            fill
-            sizes="(max-width: 768px) 100vw, 60vw"
-            className="w-full md:h-48
-            h-20
-            object-cover"
-            alt="Banner Image"
-          />
-        </div>
-      )}
-      <div
-        className="flex 
-        justify-center
-        items-center
-        flex-col
-        mt-2
-        relative
-      "
-      >
+      <div className="flex justify-center items-center flex-col relative">
         <div
-          className="w-full 
-        self-center 
-        max-w-[800px] 
-        flex 
-        flex-col
-         px-7 
-         lg:my-8"
-        >
-          <div className="text-[80px]">
-            <EmojiPicker getValue={iconOnChange}>
-              <div
-                className="w-[100px]
-                cursor-pointer
-                transition-colors
-                h-[100px]
-                flex
-                items-center
-                justify-center
-                hover:bg-muted
-                rounded-xl"
-              >
-                {details.iconId}
-              </div>
-            </EmojiPicker>
-          </div>
-          <div className="flex ">
-            <BannerUpload
-              id={fileId}
-              dirType={dirType}
-              className="mt-2
-              text-sm
-              text-muted-foreground
-              p-2
-              hover:text-card-foreground
-              transition-all
-              rounded-md"
-            >
-              {details.bannerUrl ? "Update Banner" : "Add Banner"}
-            </BannerUpload>
-            {details.bannerUrl && (
-              <Button
-                disabled={deletingBanner}
-                onClick={deleteBanner}
-                variant="ghost"
-                className="gap-2 hover:bg-background
-                flex
-                item-center
-                justify-center
-                mt-2
-                text-sm
-                text-muted-foreground
-                w-36
-                p-2
-                rounded-md"
-              >
-                <XCircleIcon size={16} />
-                <span className="whitespace-nowrap font-normal">
-                  Remove Banner
-                </span>
-              </Button>
-            )}
-          </div>
-          <span
-            className="
-            text-muted-foreground
-            text-3xl
-            font-bold
-            h-9
-          "
-          >
-            {details.title}
-          </span>
-          <span className="text-muted-foreground text-sm">
-            {dirType.toUpperCase()}
-          </span>
-        </div>
-        <div id="container" className="max-w-[800px]" ref={wrapperRef}></div>
+          id="container"
+          className="w-full max-w-[800px] relative selection:bg-[var(--selection-color)] selection:text-white px-2"
+          ref={quillWrapperRef}
+        />
       </div>
     </>
   );

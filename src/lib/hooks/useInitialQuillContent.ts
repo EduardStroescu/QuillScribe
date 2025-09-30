@@ -1,90 +1,45 @@
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import Quill from "quill";
 import {
-  getFileDetails,
-  getFolderDetails,
-  getWorkspaceDetails,
-} from "../supabase/queries";
-import { useAppState } from "../providers/state-provider";
+  type appFoldersType,
+  type appWorkspacesType,
+} from "../stores/app-store";
+import { type File } from "../supabase/supabase.types";
+import { toast } from "@/components/ui/use-toast";
+import { type Delta } from "quill/core";
 
-interface useInitialQuillContentProps {
-  fileId: string;
-  dirType: "workspace" | "folder" | "file";
-  quill: any;
+interface useQuillDataSync {
+  quill: Quill | null;
+  dirDetails: appWorkspacesType | appFoldersType | File;
 }
 
 export function useInitialQuillContent({
-  fileId,
-  dirType,
   quill,
-}: useInitialQuillContentProps) {
-  const { workspaceId, dispatch } = useAppState();
-  const router = useRouter();
+  dirDetails,
+}: useQuillDataSync) {
+  const initializedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!fileId) return;
-    const fetchInformation = async () => {
-      if (dirType === "file") {
-        const { data: selectedDir, error } = await getFileDetails(fileId);
-        if (error || !selectedDir) {
-          return router.replace("/dashboard");
-        }
+    if (typeof window === "undefined") return;
 
-        if (!selectedDir[0]) {
-          if (!workspaceId) return;
-          return router.replace(`/dashboard/${workspaceId}`);
-        }
-        if (!workspaceId || quill === null) return;
-        if (!selectedDir[0].data) return;
-        quill.setContents(JSON.parse(selectedDir[0].data || ""));
-        dispatch({
-          type: "UPDATE_FILE",
-          payload: {
-            file: { data: selectedDir[0].data },
-            fileId,
-            folderId: selectedDir[0].folderId,
-            workspaceId,
-          },
-        });
-      }
-      if (dirType === "folder") {
-        const { data: selectedDir, error } = await getFolderDetails(fileId);
-        if (error || !selectedDir) {
-          return router.replace("/dashboard");
-        }
+    if (!quill) {
+      initializedRef.current = null;
+      return;
+    }
 
-        if (!selectedDir[0]) {
-          router.replace(`/dashboard/${workspaceId}`);
-        }
-        if (quill === null) return;
-        if (!selectedDir[0].data) return;
-        quill.setContents(JSON.parse(selectedDir[0].data || ""));
-        dispatch({
-          type: "UPDATE_FOLDER",
-          payload: {
-            folderId: fileId,
-            folder: { data: selectedDir[0].data },
-            workspaceId: selectedDir[0].workspaceId,
-          },
-        });
-      }
-      if (dirType === "workspace") {
-        const { data: selectedDir, error } = await getWorkspaceDetails(fileId);
-        if (error || !selectedDir) {
-          return router.replace("/dashboard");
-        }
-        if (!selectedDir[0] || quill === null) return;
-        if (!selectedDir[0].data) return;
-        quill.setContents(JSON.parse(selectedDir[0].data || ""));
-        dispatch({
-          type: "UPDATE_WORKSPACE",
-          payload: {
-            workspace: { data: selectedDir[0].data },
-            workspaceId: fileId,
-          },
-        });
-      }
-    };
-    fetchInformation();
-  }, [fileId, workspaceId, quill, dirType, dispatch, router]);
+    if (initializedRef.current === dirDetails.id) return;
+
+    try {
+      const quillData: Delta = dirDetails?.data
+        ? JSON.parse(dirDetails.data)
+        : [];
+      quill.setContents(quillData);
+      initializedRef.current = dirDetails.id;
+    } catch {
+      toast({
+        title: "Error",
+        description: "Could not load the file. Please try again later.",
+      });
+    }
+  }, [dirDetails?.data, quill, dirDetails.id]);
 }

@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "workspaces_owner_idx" ON "workspaces" ("workspace_owner");

@@ -1,47 +1,39 @@
-import { useMemo } from "react";
-import { useAppState } from "../providers/state-provider";
-import { usePathname } from "next/navigation";
-import { findWorkspaceById } from "../utils";
+import { useParams, usePathname } from "next/navigation";
+import {
+  useAppStore,
+  selectWorkspaceById,
+  selectFolderById,
+  selectFileById,
+} from "../stores/app-store";
 
-export function useDirectoryBreadcumbs() {
-  const { state, workspaceId } = useAppState();
+export function useDirectoryBreadcrumbs() {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const pathname = usePathname();
 
-  const breadCrumbs = useMemo(() => {
-    if (!pathname || !state.workspaces || !workspaceId) return;
-    const segments = pathname
-      .split("/")
-      .filter((val) => val !== "dashboard" && val);
-    const workspaceDetails = findWorkspaceById(state, workspaceId);
-    const workspaceBreadCrumb = workspaceDetails
-      ? `${workspaceDetails.iconId} ${workspaceDetails.title}`
-      : "";
-    if (segments.length === 1) {
-      return workspaceBreadCrumb;
-    }
+  const segments = pathname
+    .split("/")
+    .filter((val) => val !== "dashboard" && val);
 
-    const folderSegment = segments[1];
-    const folderDetails = workspaceDetails?.folders.find(
-      (folder) => folder.id === folderSegment
-    );
-    const folderBreadCrumb = folderDetails
-      ? `/ ${folderDetails.iconId} ${folderDetails.title}`
-      : "";
+  const folderId = segments[1];
+  const fileId = segments[2];
 
-    if (segments.length === 2) {
-      return `${workspaceBreadCrumb} ${folderBreadCrumb}`;
-    }
+  const breadcrumb = useAppStore((state) => {
+    const workspace = selectWorkspaceById(workspaceId)(state);
+    if (!workspace) return "";
 
-    const fileSegment = segments[2];
-    const fileDetails = folderDetails?.files.find(
-      (file) => file.id === fileSegment
-    );
-    const fileBreadCrumb = fileDetails
-      ? `/ ${fileDetails.iconId} ${fileDetails.title}`
-      : "";
+    const folder = folderId
+      ? selectFolderById(workspaceId, folderId)(state)
+      : null;
+    const file = fileId
+      ? selectFileById(workspaceId, folderId, fileId)(state)
+      : null;
+
+    const workspaceBreadCrumb = `${workspace.iconId} ${workspace.title}`;
+    const folderBreadCrumb = folder ? `/ ${folder.iconId} ${folder.title}` : "";
+    const fileBreadCrumb = file ? `/ ${file.iconId} ${file.title}` : "";
 
     return `${workspaceBreadCrumb} ${folderBreadCrumb} ${fileBreadCrumb}`;
-  }, [state, pathname, workspaceId]);
+  });
 
-  return breadCrumbs;
+  return breadcrumb;
 }

@@ -10,11 +10,21 @@ export async function actionLoginUser({
   password,
 }: z.infer<typeof FormSchema>) {
   const supabase = createRouteHandlerClient({ cookies });
-  const response = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
-  return response;
+
+  return {
+    data,
+    error: error
+      ? {
+          message: error.message,
+          name: error.name,
+          status: (error as any).status,
+        }
+      : null,
+  };
 }
 
 export async function actionSignUpUser({
@@ -22,18 +32,37 @@ export async function actionSignUpUser({
   password,
 }: z.infer<typeof FormSchema>) {
   const supabase = createRouteHandlerClient({ cookies });
-  const { data } = await supabase
+
+  // Check if user already exists
+  const { data: existing } = await supabase
     .from("profiles")
     .select("*")
     .eq("email", email);
 
-  if (data?.length) return { error: { message: "User already exists", data } };
-  const response = await supabase.auth.signUp({
+  if (existing?.length) {
+    return {
+      data: null,
+      error: { message: "User already exists" },
+    };
+  }
+
+  // Sign up user
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}api/auth/callback`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback`,
     },
   });
-  return response;
+
+  return {
+    data,
+    error: error
+      ? {
+          message: error.message,
+          name: error.name,
+          status: (error as any).status,
+        }
+      : null,
+  };
 }

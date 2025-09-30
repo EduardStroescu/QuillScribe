@@ -30,6 +30,15 @@ body {
     --input: 220 13% 91%;
     --ring: 262.1 83.3% 57.8%;
     --radius: 0.5rem;
+
+    --sidebar-background: 266, 100%, 50%;
+    --sidebar-foreground: 240, 20%, 93%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 263 100% 10%;
+    --sidebar-accent-foreground: 0, 0%, 100%;
+    --sidebar-border: 263 100% 10%;
+    --sidebar-ring: 263 100% 10%;
   }
 
   .dark {
@@ -52,6 +61,15 @@ body {
     --border: 247, 18.3%, 18.2%;
     --input: 215 27.9% 16.9%;
     --ring: 263.4 70% 50.4%;
+
+    --sidebar-background: 263 100% 10%;
+    --sidebar-foreground: 240, 20%, 93%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 266, 100%, 50%;
+    --sidebar-accent-foreground: 0, 0%, 100%;
+    --sidebar-border: 266, 100%, 50%;
+    --sidebar-ring: 266, 100%, 50%;
   }
 }
 
@@ -194,13 +212,13 @@ body {
 }
 
 .ql-container {
-  min-height: 700px;
+  min-height: 500px;
   @apply !border-none;
 }
 
 .ql-editor > p,
-ol,
-ul {
+.ql-editor ol,
+.ql-editor ul {
   @apply dark:text-washed-purple-700;
 }
 

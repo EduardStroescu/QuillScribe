@@ -1,18 +1,13 @@
-import React from "react";
+import { type FC, type ReactNode } from "react";
 import { Background } from "../(site)/background";
 
 interface TemplateProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-const Template: React.FC<TemplateProps> = ({ children }) => {
+const Template: FC<TemplateProps> = ({ children }) => {
   return (
-    <div
-      className="
-      h-screen
-      p-6 flex 
-      justify-center"
-    >
+    <div className="min-h-[100dvh] p-6 flex justify-center">
       <Background />
       {children}
     </div>

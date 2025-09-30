@@ -1,15 +1,15 @@
-import React from 'react';
-import CustomDialogTrigger from '../global/custom-dialog-trigger';
-import BannerUploadForm from './banner-upload-form';
+import { type FC } from "react";
+import CustomDialogTrigger from "../global/custom-dialog-trigger";
+import BannerUploadForm from "./banner-upload-form";
 
 interface BannerUploadProps {
   children: React.ReactNode;
   className?: string;
-  dirType: 'workspace' | 'file' | 'folder';
+  dirType: "workspace" | "file" | "folder";
   id: string;
 }
 
-const BannerUpload: React.FC<BannerUploadProps> = ({
+const BannerUpload: FC<BannerUploadProps> = ({
   id,
   dirType,
   children,
@@ -17,13 +17,9 @@ const BannerUpload: React.FC<BannerUploadProps> = ({
 }) => {
   return (
     <CustomDialogTrigger
+      asChild
       header="Upload Banner"
-      content={
-        <BannerUploadForm
-          dirType={dirType}
-          id={id}
-        />
-      }
+      content={<BannerUploadForm dirType={dirType} id={id} />}
       className={className}
     >
       {children}

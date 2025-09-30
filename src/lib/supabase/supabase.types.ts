@@ -1,4 +1,4 @@
-import { InferSelectModel } from "drizzle-orm";
+import { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
   customers,
   folders,
@@ -417,10 +417,26 @@ export interface Database {
   };
 }
 
-export type workspace = InferSelectModel<typeof workspaces>;
+export type Workspace = InferSelectModel<typeof workspaces>;
+export type NewWorkspace = InferInsertModel<typeof workspaces>;
+export type UpdateWorkspace = Partial<NewWorkspace>;
+
 export type User = InferSelectModel<typeof users>;
+export type NewUser = InferInsertModel<typeof users>;
+export type UpdateUser = Partial<NewUser>;
+
 export type Folder = InferSelectModel<typeof folders>;
+export type NewFolder = InferInsertModel<typeof folders>;
+export type UpdateFolder = Partial<NewFolder>;
+
 export type File = InferSelectModel<typeof files>;
+export type NewFile = InferInsertModel<typeof files>;
+export type UpdateFile = Partial<NewFile>;
+
+export type Collaborator = Pick<
+  User,
+  "id" | "email" | "updatedAt" | "avatarUrl"
+>;
 export type Product = InferSelectModel<typeof products>;
 export type Price = InferSelectModel<typeof prices> & { products?: Product };
 export type Customer = InferSelectModel<typeof customers>;

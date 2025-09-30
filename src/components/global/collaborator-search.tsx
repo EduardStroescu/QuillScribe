@@ -1,8 +1,14 @@
-'use client';
+"use client";
 
-import { useSupabaseUser } from '@/lib/providers/supabase-user-provider';
-import { User } from '@/lib/supabase/supabase.types';
-import React, { useEffect, useRef, useState } from 'react';
+import { type Collaborator } from "@/lib/supabase/supabase.types";
+import {
+  type ChangeEvent,
+  type FC,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Sheet,
   SheetContent,
@@ -10,29 +16,30 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
-import { Search } from 'lucide-react';
-import { Input } from '../ui/input';
-import { ScrollArea } from '../ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Button } from '../ui/button';
-import { getUsersFromSearch } from '@/lib/supabase/queries';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+} from "@/components/ui/sheet";
+import { Search } from "lucide-react";
+import { Input } from "../ui/input";
+import { ScrollArea } from "../ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Button } from "../ui/button";
+import { getSupabaseImageUrl } from "@/lib/utils";
+
+type CollaboratorWithAvatar = Collaborator;
 
 interface CollaboratorSearchProps {
-  existingCollaborators: User[] | [];
-  getCollaborator: (collaborator: User) => void;
-  children: React.ReactNode;
+  existingCollaborators: Collaborator[];
+  getCollaborator: (collaborator: Collaborator) => void;
+  children: ReactNode;
 }
 
-const CollaboratorSearch: React.FC<CollaboratorSearchProps> = ({
+const CollaboratorSearch: FC<CollaboratorSearchProps> = ({
   children,
   existingCollaborators,
   getCollaborator,
 }) => {
-  const supabase = createClientComponentClient();
-  const { user } = useSupabaseUser();
-  const [searchResults, setSearchResults] = useState<User[] | []>([]);
+  const [searchResults, setSearchResults] = useState<CollaboratorWithAvatar[]>(
+    []
+  );
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -41,36 +48,55 @@ const CollaboratorSearch: React.FC<CollaboratorSearchProps> = ({
     };
   }, []);
 
-  const onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (timerRef) clearTimeout(timerRef.current);
+  const onChangeHandler = (e: ChangeEvent<HTMLInputElement>) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
-      const res = await getUsersFromSearch(e.target.value);
-      setSearchResults(res);
+      try {
+        if (!e.target.value) {
+          setSearchResults([]);
+          return;
+        }
+        const res = await fetch(`/api/search?email=${e.target.value}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error((await res.json()).error);
+        const users: Collaborator[] = await res.json();
+        setSearchResults(
+          users.filter(
+            (result) =>
+              !existingCollaborators.some(
+                (existing) => existing.id === result.id
+              )
+          )
+        );
+      } catch {
+        setSearchResults([]);
+      }
     }, 450);
   };
 
-  const addCollaborator = (user: User) => {
+  const addCollaborator = (user: Collaborator) => {
     getCollaborator(user);
   };
 
   return (
     <Sheet>
-      <SheetTrigger className="w-full">{children}</SheetTrigger>
-      <SheetContent className="w-[400px] sm:w-[540px]">
+      <SheetTrigger asChild className="mx-auto my-4">
+        {children}
+      </SheetTrigger>
+      <SheetContent className="w-[400px] sm:w-[540px] flex flex-col gap-4">
         <SheetHeader>
           <SheetTitle>Search Collaborator</SheetTitle>
           <SheetDescription className="text-sm text-muted-foreground">
-              You can also remove collaborators after adding them from the
-              settings tab.
+            You can also remove collaborators after adding them from the
+            settings tab.
           </SheetDescription>
         </SheetHeader>
-        <div
-          className="flex justify-center
-          items-center
-          gap-2
-          mt-2
-        "
-        >
+        <div className="flex justify-center items-center gap-2">
           <Search />
           <Input
             name="name"
@@ -79,54 +105,40 @@ const CollaboratorSearch: React.FC<CollaboratorSearchProps> = ({
             onChange={onChangeHandler}
           />
         </div>
-        <ScrollArea
-          className="mt-6
-          overflow-y-scroll
-          w-full
-          rounded-md
-        "
-        >
-          {searchResults
-            .filter(
-              (result) =>
-                !existingCollaborators.some(
-                  (existing) => existing.id === result.id
-                )
-            )
-            .filter((result) => result.id !== user?.id)
-            .map((user) => {
-              const avatarUrl = user?.avatarUrl ? supabase.storage.from('avatars').getPublicUrl(user?.avatarUrl)
-                .data.publicUrl : "";
-              return (
+        <ScrollArea className="w-full h-full rounded-md">
+          {searchResults.map((collaborator) => {
+            return (
               <div
-                key={user.id}
-                className=" p-4 flex justify-between items-center"
+                key={collaborator.id}
+                className="my-4 px-4 flex justify-between items-center"
               >
                 <div className="flex gap-4 items-center">
                   <Avatar className="w-8 h-8">
-                    <AvatarImage src={avatarUrl} alt='Collaborator Avatar' />
-                    <AvatarFallback>{user?.email?.slice(0,2).toUpperCase()}</AvatarFallback>
+                    <AvatarImage
+                      src={getSupabaseImageUrl(
+                        "avatars",
+                        collaborator.avatarUrl,
+                        collaborator.updatedAt
+                      )}
+                      alt={`${collaborator?.email}'s Avatar`}
+                    />
+                    <AvatarFallback>
+                      {collaborator?.email?.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
-                  <div
-                    className="text-sm 
-                  gap-2 
-                  overflow-hidden 
-                  overflow-ellipsis 
-                  w-[180px] 
-                  text-muted-foreground
-                  "
-                  >
-                    {user.email}
+                  <div className="text-sm gap-2 overflow-hidden overflow-ellipsis w-[180px] text-muted-foreground">
+                    {collaborator.email}
                   </div>
                 </div>
                 <Button
                   variant="secondary"
-                  onClick={() => addCollaborator(user)}
+                  onClick={() => addCollaborator(collaborator)}
                 >
                   Add
                 </Button>
               </div>
-)})}
+            );
+          })}
         </ScrollArea>
       </SheetContent>
     </Sheet>

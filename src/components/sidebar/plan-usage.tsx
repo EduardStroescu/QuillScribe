@@ -1,64 +1,51 @@
 "use client";
 
+import { type FC } from "react";
 import { MAX_FOLDERS_FREE_PLAN } from "@/lib/const/constants";
-import { useAppState } from "@/lib/providers/state-provider";
-import { Subscription } from "@/lib/supabase/supabase.types";
-import React, { useEffect, useState } from "react";
+import { type Subscription } from "@/lib/supabase/supabase.types";
 import { Progress } from "../ui/progress";
 import QuillScribeDiamondIcon from "../icons/quillScribeDiamondIcon";
-import { findWorkspaceById } from "@/lib/utils";
+import { SidebarGroup, SidebarMenu, SidebarMenuItem } from "../ui/sidebar";
+import { useParams } from "next/navigation";
+import { selectWorkspaceById, useAppStore } from "@/lib/stores/app-store";
 
 interface PlanUsageProps {
-  foldersLength: number;
   subscription: Subscription | null;
 }
 
-const PlanUsage: React.FC<PlanUsageProps> = ({
-  foldersLength,
-  subscription,
-}) => {
-  const { workspaceId, state } = useAppState();
-  const [usagePercentage, setUsagePercentage] = useState(
-    (foldersLength / MAX_FOLDERS_FREE_PLAN) * 100
-  );
+const ZERO = 0;
 
-  useEffect(() => {
-    const stateFoldersLength = findWorkspaceById(state, workspaceId)?.folders
-      .length;
-    if (stateFoldersLength === undefined) return;
-    setUsagePercentage((stateFoldersLength / MAX_FOLDERS_FREE_PLAN) * 100);
-  }, [state, workspaceId]);
+const PlanUsage: FC<PlanUsageProps> = ({ subscription }) => {
+  const { workspaceId } = useParams<{ workspaceId?: string }>();
+  const usagePercentage = useAppStore((state) => {
+    const folderCount =
+      selectWorkspaceById(workspaceId)(state)?.folders.length ?? ZERO;
+    return (folderCount / MAX_FOLDERS_FREE_PLAN) * 100;
+  });
+
+  if (subscription?.status === "active") return null;
 
   return (
-    <article className="mb-4">
-      {subscription?.status !== "active" && (
-        <div
-          className="flex 
-          gap-2
-          text-muted-foreground
-          mb-2
-          items-center
-        "
-        >
-          <div className="h-4 w-4">
-            <QuillScribeDiamondIcon />
+    <SidebarGroup>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <div className="flex gap-2 mb-2 items-center">
+            <div className="h-4 w-4">
+              <QuillScribeDiamondIcon />
+            </div>
+            <div className="flex justify-between w-full items-center brightness-75">
+              <div>Free Plan</div>
+              <small>{usagePercentage.toFixed(0)}% / 100%</small>
+            </div>
           </div>
-          <div
-            className="flex 
-        justify-between 
-        w-full 
-        items-center
-        "
-          >
-            <div>Free Plan</div>
-            <small>{usagePercentage.toFixed(0)}% / 100%</small>
-          </div>
-        </div>
-      )}
-      {subscription?.status !== "active" && (
-        <Progress value={usagePercentage} className="h-1" />
-      )}
-    </article>
+          <Progress
+            value={usagePercentage}
+            progressColor="bg-sidebar-accent"
+            className="h-1"
+          />
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarGroup>
   );
 };
 

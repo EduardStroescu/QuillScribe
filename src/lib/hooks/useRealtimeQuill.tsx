@@ -1,39 +1,36 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  findUser,
-  updateFile,
-  updateFolder,
-  updateWorkspace,
-} from "../supabase/queries";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { updateFile, updateFolder, updateWorkspace } from "../supabase/actions";
 import { useSupabaseUser } from "../providers/supabase-user-provider";
 import { useSocket } from "../providers/socket-provider";
-import { useAppState } from "../providers/state-provider";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { Folder, workspace } from "../supabase/supabase.types";
-import { generateRandomHexColor } from "../utils";
+import { toast } from "@/components/ui/use-toast";
+import QuillCursors from "quill-cursors";
+import { EmitterSource, Range } from "quill";
+import { Delta } from "quill/core";
+import { useQuillContext } from "../providers/quill-editor-provider";
+import { useAppStore, useAppStoreActions } from "../stores/app-store";
+import { type User } from "../supabase/supabase.types";
+import { stringToColor } from "../color-generator";
 
-interface useRealtimeQuillProps {
-  quill: any;
-  fileId: string;
-  dirType: "workspace" | "folder" | "file";
-  details: workspace | Folder | File;
-}
+const MAX_CONTENT_SIZE = 1024 * 1024; // 1MB
 
-export function useRealtimeQuill({
-  quill,
-  fileId,
-  dirType,
-  details,
-}: useRealtimeQuillProps) {
-  const { workspaceId, folderId, dispatch } = useAppState();
+export function useRealtimeQuill() {
+  const { quill, fileId, dirType, dirDetails } = useQuillContext();
+  const {
+    findFileById,
+    findFolderById,
+    findWorkspaceById,
+    updateWorkspace: updateStateWorkspace,
+    updateFolder: updateStateFolder,
+    updateFile: updateStateFile,
+  } = useAppStoreActions();
   const supabase = createClientComponentClient();
   const { user } = useSupabaseUser();
   const { socket, isConnected } = useSocket();
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const [localCursors, setLocalCursors] = useState<any>([]);
   const [saving, setSaving] = useState(false);
   const [collaborators, setCollaborators] = useState<
-    { id: string; email: string; avatarUrl: string }[]
+    Pick<User, "id" | "email" | "avatarUrl" | "updatedAt">[]
   >([]);
 
   // Connect to Socket.io Rooms
@@ -44,15 +41,16 @@ export function useRealtimeQuill({
 
   // Receive cursor position
   useEffect(() => {
-    if (quill === null || socket === null || !fileId || !localCursors.length)
-      return;
-    const socketHandler = (range: any, roomId: string, cursorId: string) => {
+    if (quill === null || socket === null || !fileId) return;
+
+    const socketHandler = (range: Range, roomId: string, cursorId: string) => {
       if (roomId === fileId) {
-        const cursorToMove = localCursors.find(
-          (c: any) => c.cursors()?.[0].id === cursorId
-        );
+        const cursorsModule = quill.getModule("cursors") as QuillCursors;
+        const cursorToMove = cursorsModule
+          .cursors()
+          ?.find((c) => c.id === cursorId);
         if (cursorToMove) {
-          cursorToMove.moveCursor(cursorId, range);
+          cursorsModule.moveCursor(cursorId, range);
         }
       }
     };
@@ -60,67 +58,136 @@ export function useRealtimeQuill({
     return () => {
       socket.off("receive-cursor-move", socketHandler);
     };
-  }, [quill, socket, fileId, localCursors]);
+  }, [quill, socket, fileId]);
 
-  //Send quill changes to all clients
+  // Send quill changes to all clients
   useEffect(() => {
-    if (quill === null || socket === null || !fileId || !user) return;
+    if (quill === null || socket === null || !fileId || !user?.id) return;
 
-    const selectionChangeHandler = (cursorId: string) => {
-      return (range: any, oldRange: any, source: any) => {
+    const selectionChangeHandler =
+      (cursorId: string) =>
+      (range: Range, oldRange: Range, source: EmitterSource) => {
         if (source === "user" && cursorId) {
           socket.emit("send-cursor-move", range, fileId, cursorId);
         }
       };
-    };
-    const quillHandler = (delta: any, oldDelta: any, source: any) => {
+
+    const quillHandler = (
+      delta: Delta,
+      oldDelta: Delta,
+      source: EmitterSource
+    ) => {
       if (source !== "user") return;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       setSaving(true);
+
       const contents = quill.getContents();
       const quillLength = quill.getLength();
+
+      const jsonContents = JSON.stringify(contents);
+      // Calculate size in bytes
+      const sizeInBytes = new TextEncoder().encode(jsonContents).length;
+
+      // Check if the document exceeds the maximum size allowed for the body of server actions and skip saving
+      if (sizeInBytes > MAX_CONTENT_SIZE) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description:
+            "The document exceeds 1MB and cannot be saved. Please reduce image or text size.",
+        });
+        return; // Skip saving
+      }
+
       saveTimerRef.current = setTimeout(async () => {
-        if (contents && quillLength !== 1 && fileId) {
+        if (contents && quillLength >= 1 && fileId) {
           if (dirType == "workspace") {
-            dispatch({
-              type: "UPDATE_WORKSPACE",
-              payload: {
-                workspace: { data: JSON.stringify(contents) },
-                workspaceId: fileId,
-              },
+            const currWorkspace = findWorkspaceById(fileId);
+            updateStateWorkspace(fileId, {
+              data: jsonContents,
             });
-            await updateWorkspace({ data: JSON.stringify(contents) }, fileId);
+            const updateResponse = await updateWorkspace(
+              {
+                data: jsonContents,
+                lastModifiedBy: useAppStore.getState().currentClientMutationId,
+              },
+              fileId
+            );
+            if (currWorkspace && updateResponse.error) {
+              updateStateWorkspace(fileId, { data: currWorkspace.data });
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description: updateResponse.error,
+              });
+            }
           }
           if (dirType == "folder") {
-            if (!workspaceId) return;
-            dispatch({
-              type: "UPDATE_FOLDER",
-              payload: {
-                folder: { data: JSON.stringify(contents) },
-                workspaceId,
-                folderId: fileId,
-              },
+            const currFolder = findFolderById(dirDetails.workspaceId, fileId);
+            updateStateFolder(dirDetails.workspaceId, fileId, {
+              data: jsonContents,
             });
-            await updateFolder({ data: JSON.stringify(contents) }, fileId);
+            const updateResponse = await updateFolder(
+              {
+                data: jsonContents,
+                lastModifiedBy: useAppStore.getState().currentClientMutationId,
+              },
+              fileId
+            );
+            if (currFolder && updateResponse.error) {
+              updateStateFolder(dirDetails.workspaceId, fileId, {
+                data: currFolder.data,
+              });
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description: updateResponse.error,
+              });
+            }
           }
           if (dirType == "file") {
-            if (!workspaceId || !folderId) return;
-            dispatch({
-              type: "UPDATE_FILE",
-              payload: {
-                file: { data: JSON.stringify(contents) },
-                workspaceId,
-                folderId: folderId,
-                fileId,
+            const currFile = findFileById(
+              dirDetails.workspaceId,
+              dirDetails.folderId,
+              fileId
+            );
+            updateStateFile(
+              dirDetails.workspaceId,
+              dirDetails.folderId,
+              fileId,
+              {
+                data: jsonContents,
+              }
+            );
+            const updateResponse = await updateFile(
+              {
+                data: jsonContents,
+                lastModifiedBy: useAppStore.getState().currentClientMutationId,
               },
-            });
-            await updateFile({ data: JSON.stringify(contents) }, fileId);
+              fileId
+            );
+            if (currFile && updateResponse.error) {
+              updateStateFile(
+                dirDetails.workspaceId,
+                dirDetails.folderId,
+                fileId,
+                {
+                  data: currFile.data,
+                }
+              );
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description: updateResponse.error,
+              });
+            }
           }
         }
         setSaving(false);
       }, 850);
       socket.emit("send-changes", delta, fileId);
     };
+
     quill.on("text-change", quillHandler);
     quill.on("selection-change", selectionChangeHandler(user.id));
 
@@ -133,18 +200,21 @@ export function useRealtimeQuill({
     quill,
     socket,
     fileId,
-    user,
-    details,
-    folderId,
-    workspaceId,
-    dispatch,
+    user?.id,
+    dirDetails,
     dirType,
+    findWorkspaceById,
+    updateStateWorkspace,
+    findFolderById,
+    updateStateFolder,
+    findFileById,
+    updateStateFile,
   ]);
 
   // Retrieve Socket changes from all clients
   useEffect(() => {
     if (quill === null || socket === null) return;
-    const socketHandler = (deltas: any, id: string) => {
+    const socketHandler = (deltas: Delta, id: string) => {
       if (id === fileId) {
         quill.updateContents(deltas);
       }
@@ -157,50 +227,91 @@ export function useRealtimeQuill({
 
   // Supabase realtime collaborator sync
   useEffect(() => {
-    if (!fileId || quill === null) return;
-    const room = supabase.channel(fileId);
-    const subscription = room
-      .on("presence", { event: "sync" }, () => {
-        const newState = room.presenceState();
-        const newCollaborators = Object.values(newState).flat() as any;
-        setCollaborators(newCollaborators);
-        if (user) {
-          const allCursors: any = [];
-          newCollaborators.forEach(
-            (collaborator: { id: string; email: string; avatar: string }) => {
-              if (collaborator.id !== user.id) {
-                const userCursor = quill.getModule("cursors");
-                userCursor.createCursor(
-                  collaborator.id,
-                  collaborator.email.split("@")[0],
-                  generateRandomHexColor()
-                );
-                allCursors.push(userCursor);
-              }
-            }
-          );
-          setLocalCursors(allCursors);
-        }
-      })
-      .subscribe(async (status: string) => {
-        if (status !== "SUBSCRIBED" || !user) return;
-        const response = await findUser(user.id);
-        if (!response) return;
+    if (!fileId || !quill || !user?.id) return;
 
+    const room = supabase.channel(fileId);
+
+    const updatePresence = () => {
+      const state = room.presenceState();
+      const allConnections = Object.values(
+        state
+      ).flat() as unknown as typeof collaborators;
+
+      const uniqueCollaboratorsMap = new Map<
+        string,
+        (typeof allConnections)[0]
+      >();
+      allConnections.forEach((c) => uniqueCollaboratorsMap.set(c.id, c));
+      const uniqueCollaborators = Array.from(uniqueCollaboratorsMap.values());
+
+      setCollaborators((prev) => {
+        // Check if the new array is different by ID
+        const isEqual =
+          prev.length === uniqueCollaborators.length &&
+          prev.every((p, i) => p.id === uniqueCollaborators[i].id);
+
+        if (isEqual) return prev; // skip update
+        return uniqueCollaborators;
+      });
+
+      // Manage cursors
+      const cursorsModule = quill.getModule("cursors") as QuillCursors;
+      const existingCursorIds = cursorsModule.cursors().map((c) => c.id);
+
+      // Add/update cursors for active collaborators
+      uniqueCollaborators.forEach((collab) => {
+        if (collab.id === user.id) return;
+
+        if (!existingCursorIds.includes(collab.id)) {
+          cursorsModule.createCursor(
+            collab.id,
+            collab.email.split("@")[0],
+            stringToColor(collab.id)
+          );
+        }
+      });
+
+      // Remove cursors for users who left
+      existingCursorIds.forEach((cursorId) => {
+        if (!uniqueCollaborators.find((c) => c.id === cursorId)) {
+          cursorsModule.removeCursor(cursorId);
+        }
+      });
+    };
+
+    const subscription = room
+      .on("presence", { event: "sync" }, updatePresence)
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+
+        // Track current user
         room.track({
           id: user.id,
           email: user.email?.split("@")[0],
-          avatarUrl: response.avatarUrl
-            ? supabase.storage.from("avatars").getPublicUrl(response.avatarUrl)
-                .data.publicUrl
-            : "",
+          avatarUrl: user.avatarUrl,
+          updatedAt: user.updatedAt,
         });
       });
+
+    // Initial update
+    updatePresence();
+
     return () => {
       subscription.unsubscribe();
       supabase.removeChannel(room);
     };
-  }, [fileId, quill, supabase, user]);
+  }, [
+    fileId,
+    quill,
+    supabase,
+    user?.id,
+    user?.email,
+    user?.avatarUrl,
+    user?.updatedAt,
+  ]);
 
-  return { collaborators, setCollaborators, saving, isConnected };
+  return useMemo(
+    () => ({ collaborators, setCollaborators, saving, isConnected }),
+    [collaborators, setCollaborators, saving, isConnected]
+  );
 }

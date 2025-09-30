@@ -1,0 +1,1 @@
+ALTER TABLE "collaborators" ADD CONSTRAINT "collaborators_workspace_user_id_idx" UNIQUE("workspace_id","user_id");

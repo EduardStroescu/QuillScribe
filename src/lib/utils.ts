@@ -1,7 +1,11 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Price } from "./supabase/supabase.types";
-import { AppState } from "./providers/state-provider";
+import { type File, type Price } from "./supabase/supabase.types";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import {
+  type appFoldersType,
+  type appWorkspacesType,
+} from "./stores/app-store";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,7 +20,7 @@ export const formatPrice = (price: Price) => {
   return priceString;
 };
 
-export const getURL = () => {
+export const getStripeRedirectUrl = () => {
   let url = process?.env?.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000/";
 
   url = url.includes("http") ? url : `https://${url}`;
@@ -24,7 +28,7 @@ export const getURL = () => {
   return url;
 };
 
-export const postData = async ({
+export const createStripePortalLink = async ({
   url,
   data,
 }: {
@@ -49,54 +53,33 @@ export const toDateTime = (secs: number) => {
   return t;
 };
 
-export const findWorkspaceById = (
-  state: AppState,
-  workspaceId: string | undefined
+export const getSupabaseImageUrl = (
+  from: "file-banners" | "workspace-logos" | "avatars",
+  basePath: string | null,
+  version?: string | number | null
 ) => {
-  return state.workspaces.find((workspace) => workspace.id === workspaceId);
+  try {
+    if (!basePath) return "";
+
+    const supabase = createClientComponentClient();
+    const url = supabase.storage.from(from).getPublicUrl(basePath)
+      ?.data?.publicUrl;
+
+    if (!url) return "";
+
+    return version ? `${url}?v=${encodeURIComponent(version)}` : url;
+  } catch {
+    return "";
+  }
 };
 
-export const findFolderById = (
-  state: AppState,
-  workspaceId: string | undefined,
-  folderId: string | undefined
-) => {
-  return state.workspaces
-    .find((workspace) => workspace.id === workspaceId)
-    ?.folders.find((f) => f.id === folderId);
-};
+// Type guards
+export const isFile = (
+  d: appWorkspacesType | appFoldersType | File,
+  dirType: "workspace" | "folder" | "file"
+): d is File => dirType === "file";
 
-export const findFileById = (
-  state: AppState,
-  workspaceId: string | undefined,
-  folderId: string | undefined,
-  fileId: string | undefined
-) => {
-  return state.workspaces
-    .find((workspace) => workspace.id === workspaceId)
-    ?.folders.find((folder) => folder.id === folderId)
-    ?.files.find((file) => file.id === fileId);
-};
-
-export const generateRandomHexColor = () => {
-  const dominant = Math.floor(Math.random() * 3); // Choose dominant channel (0 = red, 1 = green, 2 = blue)
-
-  const r =
-    dominant === 0
-      ? Math.floor(Math.random() * 201)
-      : Math.floor(Math.random() * 101);
-  const g =
-    dominant === 1
-      ? Math.floor(Math.random() * 201)
-      : Math.floor(Math.random() * 101);
-  const b =
-    dominant === 2
-      ? Math.floor(Math.random() * 201)
-      : Math.floor(Math.random() * 101);
-
-  const hexColor = `#${r.toString(16).padStart(2, "0")}${g
-    .toString(16)
-    .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
-
-  return hexColor;
-};
+export const isFolder = (
+  d: appWorkspacesType | appFoldersType | File,
+  dirType: "workspace" | "folder" | "file"
+): d is appFoldersType => dirType === "folder";

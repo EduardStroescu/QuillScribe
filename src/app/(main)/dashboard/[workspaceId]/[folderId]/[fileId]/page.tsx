@@ -1,23 +1,21 @@
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-import React from 'react';
-import QuillEditor from '@/components/quill-editor/quill-editor';
-import { getFileDetails } from '@/lib/supabase/queries';
-import { redirect } from 'next/navigation';
+import { getFileDetails } from "@/lib/supabase/queries";
+import { redirect } from "next/navigation";
+import { ClientSetter } from "@/components/quill-editor/quill-client-setter";
 
-const File = async ({ params }: { params: { fileId: string } }) => {
-  const { data, error } = await getFileDetails(params.fileId);
-  if (error || !data.length) redirect('/dashboard');
-
-  return (
-    <div className="relative ">
-      <QuillEditor
-        dirType="file"
-        fileId={params.fileId}
-        dirDetails={data[0] || {}}
-      />
-    </div>
+const File = async ({
+  params,
+}: {
+  params: { folderId: string; fileId: string };
+}) => {
+  const { data: fileDetails, error: fileDetailsError } = await getFileDetails(
+    params.fileId
   );
+  if (fileDetailsError || !fileDetails)
+    redirect(`/dashboard/${params.folderId}`);
+
+  return <ClientSetter dirDetails={fileDetails[0]} dirDetailsType="file" />;
 };
 
 export default File;

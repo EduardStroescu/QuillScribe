@@ -1,15 +1,15 @@
-import React from "react";
+import { type ComponentProps, type FC, type ReactNode } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { cn } from "@/lib/utils";
 
-type CardProps = React.ComponentProps<typeof Card>;
+type CardProps = ComponentProps<typeof Card>;
 type CustomCardProps = CardProps & {
-  cardHeader?: React.ReactNode;
-  cardContent?: React.ReactNode;
-  cardFooter?: React.ReactNode;
+  cardHeader?: ReactNode;
+  cardContent?: ReactNode;
+  cardFooter?: ReactNode;
 };
 
-const CustomCard: React.FC<CustomCardProps> = ({
+const CustomCard: FC<CustomCardProps> = ({
   className,
   cardHeader,
   cardContent,

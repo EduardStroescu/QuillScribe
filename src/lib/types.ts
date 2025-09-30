@@ -13,15 +13,22 @@ export const CreateWorkspaceFormSchema = z.object({
     .string()
     .describe("Workspace Name")
     .min(1, "Workspace name must be min of 1 character"),
-  logo: z.any(),
+  logo: z
+    .any()
+    .refine((file) => file instanceof FileList, { message: "Invalid file" })
+    .optional(),
 });
 
 export const UploadBannerFormSchema = z.object({
-  banner: z.string().describe("Banner Image"),
+  banner: z
+    .any()
+    .refine((file) => file instanceof FileList, { message: "Invalid file" }),
 });
 
 export const UploadAvatarFormSchema = z.object({
-  avatar: z.string().describe("Avatar Image"),
+  avatar: z
+    .any()
+    .refine((file) => file instanceof FileList, { message: "Invalid file" }),
 });
 
 export type NextApiResponseServerIo = NextApiResponse & {

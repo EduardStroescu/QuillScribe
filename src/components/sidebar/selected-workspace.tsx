@@ -1,59 +1,33 @@
-"use client";
-
-import { workspace } from "@/lib/supabase/supabase.types";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import { type Workspace } from "@/lib/supabase/supabase.types";
+import { getSupabaseImageUrl } from "@/lib/utils";
+import { type FC } from "react";
+import { Avatar, AvatarImage } from "../ui/avatar";
+import { AvatarFallback } from "@radix-ui/react-avatar";
 
 interface SelectedWorkspaceProps {
-  workspace: workspace;
+  workspace: Omit<Workspace, "data">;
+  isHeader?: boolean;
 }
 
-const SelectedWorkspace: React.FC<SelectedWorkspaceProps> = ({ workspace }) => {
-  const supabase = createClientComponentClient();
-  const [workspaceLogo, setWorkspaceLogo] = useState("/quillScribeLogo.svg");
-  useEffect(() => {
-    if (workspace.logo) {
-      const path = supabase.storage
-        .from("workspace-logos")
-        .getPublicUrl(workspace.logo)?.data.publicUrl;
-      setWorkspaceLogo(path);
-    }
-  }, [workspace, supabase]);
-
+const SelectedWorkspace: FC<SelectedWorkspaceProps> = ({ workspace }) => {
   return (
-    <div
-      className="flex 
-      rounded-md 
-      hover:bg-muted 
-      transition-all 
-      flex-row 
-      py-2
-      px-3 
-      gap-4 
-      justify-center 
-      cursor-pointer 
-      items-center 
-      my-2"
-    >
-      <Image
-        src={workspaceLogo}
-        alt="workspace logo"
-        width={20}
-        height={20}
-        style={{ objectFit: "cover", width: "auto", height: "auto" }}
-      />
-      <div className="flex flex-col">
-        <p
-          className="text-lg 
-        w-[170px] 
-        overflow-hidden 
-        overflow-ellipsis 
-        whitespace-nowrap"
-        >
-          {workspace.title}
-        </p>
-      </div>
+    <div className="flex gap-2 items-center">
+      <Avatar className="w-8 h-8">
+        <AvatarImage
+          alt="Workspace Logo"
+          src={getSupabaseImageUrl(
+            "workspace-logos",
+            workspace.logo,
+            workspace.updatedAt
+          )}
+        />
+        <AvatarFallback className="w-full h-full flex items-center justify-center text-white bg-sidebar outline outline-white -outline-offset-1 rounded-full font-bold font-serif">
+          {workspace.title?.slice(0, 2).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+      <span className="text-lg truncate whitespace-nowrap">
+        {workspace.title}
+      </span>
     </div>
   );
 };

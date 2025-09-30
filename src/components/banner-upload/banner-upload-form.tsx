@@ -1,110 +1,177 @@
 "use client";
 
-import { useAppState } from "@/lib/providers/state-provider";
-import { v4 } from "uuid";
 import { UploadBannerFormSchema } from "@/lib/types";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import React from "react";
+import { type Dispatch, type FC, type SetStateAction } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import Loader from "../global/Loader";
+import Loader from "../global/loader";
 import {
   updateFile,
   updateFolder,
   updateWorkspace,
-} from "@/lib/supabase/queries";
-import { useToast } from "../ui/use-toast";
+} from "@/lib/supabase/actions";
+import { toast } from "../ui/use-toast";
+import { useAppStore, useAppStoreActions } from "@/lib/stores/app-store";
+import { useParams } from "next/navigation";
+import { uploadFile } from "@/lib/supabase/uploadFile";
 
 interface BannerUploadFormProps {
+  setOpen?: Dispatch<SetStateAction<boolean>>;
   dirType: "workspace" | "file" | "folder";
   id: string;
 }
 
-const BannerUploadForm: React.FC<BannerUploadFormProps> = ({ dirType, id }) => {
-  const uuid = v4();
-  const { toast } = useToast();
-  const supabase = createClientComponentClient();
-  const { workspaceId, folderId, dispatch } = useAppState();
+const BannerUploadForm: FC<BannerUploadFormProps> = ({
+  setOpen,
+  dirType,
+  id,
+}) => {
+  const { workspaceId, folderId } = useParams<{
+    workspaceId: string;
+    folderId: string;
+  }>();
+
+  const {
+    updateWorkspace: updateStateWorkspace,
+    updateFolder: updateStateFolder,
+    updateFile: updateStateFile,
+  } = useAppStoreActions();
+
   const {
     register,
     handleSubmit,
     formState: { isSubmitting: isUploading, errors },
   } = useForm<z.infer<typeof UploadBannerFormSchema>>({
     mode: "onChange",
-    defaultValues: {
-      banner: "",
-    },
   });
+
   const onSubmitHandler: SubmitHandler<
     z.infer<typeof UploadBannerFormSchema>
   > = async (values) => {
     const file = values.banner?.[0];
-    if (!file || !id) return;
-    try {
-      let filePath = null;
-
-      const uploadBanner = async () => {
-        await supabase.storage.from("file-banners").remove([`banner-${id}`]);
-        const { data, error } = await supabase.storage
-          .from("file-banners")
-          .upload(`banner-${id}?v=${uuid}`, file, {
-            upsert: true,
-          });
-        if (error) throw new Error();
-        filePath = data.path;
-      };
-
-      if (dirType === "file") {
-        if (!workspaceId || !folderId) return;
-        await uploadBanner();
-        dispatch({
-          type: "UPDATE_FILE",
-          payload: {
-            file: { bannerUrl: filePath },
-            fileId: id,
-            folderId,
-            workspaceId,
-          },
-        });
-        await updateFile({ bannerUrl: filePath }, id);
-      } else if (dirType === "folder") {
-        if (!workspaceId || !folderId) return;
-        await uploadBanner();
-        dispatch({
-          type: "UPDATE_FOLDER",
-          payload: {
-            folderId: id,
-            folder: { bannerUrl: filePath },
-            workspaceId,
-          },
-        });
-        await updateFolder({ bannerUrl: filePath }, id);
-      } else if (dirType === "workspace") {
-        if (!workspaceId) return;
-        await uploadBanner();
-        dispatch({
-          type: "UPDATE_WORKSPACE",
-          payload: {
-            workspace: { bannerUrl: filePath },
-            workspaceId,
-          },
-        });
-        await updateWorkspace({ bannerUrl: filePath }, id);
-      }
-    } catch {
+    if (!file || !id) {
       toast({
         variant: "destructive",
         title: "Error! Could not upload your banner, please try again later.",
       });
+      return;
     }
+
+    const { publicPath: banner } = await uploadFile(
+      "file-banners",
+      file,
+      `banner-${id}`
+    );
+
+    if (!banner) {
+      toast({
+        variant: "destructive",
+        title: "Error! Could not upload your banner, please try again later.",
+      });
+      return;
+    }
+
+    // Map dirType → update function + state updater
+    const handlers: Record<
+      typeof dirType,
+      | (() => Promise<{
+          error: string | null;
+        }>)
+      | undefined
+    > = {
+      file:
+        workspaceId && folderId
+          ? async () => {
+              const { data: updatedFile, error } = await updateFile(
+                {
+                  bannerUrl: banner,
+                  lastModifiedBy:
+                    useAppStore.getState().currentClientMutationId,
+                },
+                id
+              );
+              if (updatedFile)
+                updateStateFile(workspaceId, folderId, id, {
+                  bannerUrl: updatedFile.bannerUrl,
+                  updatedAt: updatedFile.updatedAt,
+                });
+
+              return { error };
+            }
+          : undefined,
+      folder:
+        workspaceId && folderId
+          ? async () => {
+              const { data: updatedFolder, error } = await updateFolder(
+                {
+                  bannerUrl: banner,
+                  lastModifiedBy:
+                    useAppStore.getState().currentClientMutationId,
+                },
+                id
+              );
+              if (updatedFolder)
+                updateStateFolder(workspaceId, id, {
+                  bannerUrl: updatedFolder.bannerUrl,
+                  updatedAt: updatedFolder.updatedAt,
+                });
+
+              return { error };
+            }
+          : undefined,
+      workspace: workspaceId
+        ? async () => {
+            const { data: updatedWorkspace, error } = await updateWorkspace(
+              {
+                bannerUrl: banner,
+                lastModifiedBy: useAppStore.getState().currentClientMutationId,
+              },
+              id
+            );
+            if (updatedWorkspace)
+              updateStateWorkspace(id, {
+                bannerUrl: updatedWorkspace.bannerUrl,
+                updatedAt: updatedWorkspace.updatedAt,
+              });
+
+            return { error };
+          }
+        : undefined,
+    };
+
+    const handler = handlers[dirType];
+    if (!handler) {
+      toast({
+        variant: "destructive",
+        title: "Error! Could not upload your banner, please try again later.",
+      });
+      return;
+    }
+
+    const { error } = await handler();
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error,
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Banner updated.",
+      });
+    }
+
+    setOpen?.(false);
   };
+
   return (
     <form
       onSubmit={handleSubmit(onSubmitHandler)}
-      className="flex flex-col gap-2"
+      className="flex flex-col gap-1"
     >
       <Label className="text-sm text-muted-foreground" htmlFor="bannerImage">
         Banner Image

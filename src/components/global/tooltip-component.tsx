@@ -1,28 +1,20 @@
-import React from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
-interface TooltipComponentProps {
-  children: React.ReactNode;
+import { type FC, type ReactNode, type ComponentProps } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+interface TooltipComponentProps extends ComponentProps<typeof TooltipTrigger> {
+  children: ReactNode;
   message: string;
-  asChild?: boolean;
 }
 
-const TooltipComponent: React.FC<TooltipComponentProps> = ({
+const TooltipComponent: FC<TooltipComponentProps> = ({
   children,
   message,
-  asChild,
+  ...props
 }) => {
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild={asChild}>{children}</TooltipTrigger>
-        <TooltipContent>{message}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger {...props}>{children}</TooltipTrigger>
+      <TooltipContent>{message}</TooltipContent>
+    </Tooltip>
   );
 };
 

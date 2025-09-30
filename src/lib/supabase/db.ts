@@ -7,11 +7,19 @@ import * as schema from "../../../migrations/schema";
 dotenv.config({ path: ".env" });
 
 if (!process.env.DATABASE_URL) {
-  console.log("🔴 no database URL");
+  throw new Error("🔴 DATABASE_URL not set");
 }
 
-const client = postgres(process.env.DATABASE_URL!, { prepare: false });
-const drizzleDb = drizzle(client, { schema });
+// Store globals to prevent creating multiple clients in dev
+const globalForDrizzle = globalThis as unknown as {
+  drizzle?: PostgresJsDatabase<typeof schema>;
+  pgClient?: ReturnType<typeof postgres>;
+};
+
+const client =
+  globalForDrizzle.pgClient ||
+  postgres(process.env.DATABASE_URL!, { prepare: false });
+const db = globalForDrizzle.drizzle || drizzle(client, { schema });
 
 // const migrateDb = async () => {
 //   try {
@@ -24,13 +32,9 @@ const drizzleDb = drizzle(client, { schema });
 // };
 // migrateDb();
 
-const globalForDrizzle = globalThis as unknown as {
-  drizzle: PostgresJsDatabase<typeof schema> | undefined;
-};
-
-// In development, use the same drizzle instance globally to prevent creating multiple connections
-const db = globalForDrizzle.drizzle || drizzleDb;
-
-if (process.env.NODE_ENV !== "production") globalForDrizzle.drizzle = drizzleDb;
+if (process.env.NODE_ENV !== "production") {
+  globalForDrizzle.pgClient = client;
+  globalForDrizzle.drizzle = db;
+}
 
 export default db;

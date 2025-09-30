@@ -1,22 +1,37 @@
 "use client";
 
-import { AuthUser } from "@supabase/supabase-js";
-import { Subscription } from "../supabase/supabase.types";
-import { createContext, useContext, useEffect, useState } from "react";
+import { type AuthUser } from "@supabase/supabase-js";
+import { type Subscription, type User } from "../supabase/supabase.types";
+import {
+  createContext,
+  type Dispatch,
+  type FC,
+  type ReactNode,
+  type SetStateAction,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { getUserSubscriptionStatus } from "../supabase/queries";
-import { useToast } from "@/components/ui/use-toast";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useAppStoreActions } from "../stores/app-store";
+import { stringToColor } from "../color-generator";
+
+type SupabaseUser = (AuthUser & User) | null;
 
 type SupabaseUserContextType = {
-  user: AuthUser | null;
-  setUser: React.Dispatch<React.SetStateAction<AuthUser | null>>;
+  user: SupabaseUser;
+  setUser: Dispatch<SetStateAction<SupabaseUser>>;
+  logout: () => Promise<void>;
   subscription: Subscription | null;
 };
 
 const SupabaseUserContext = createContext<SupabaseUserContextType>({
   user: null,
   setUser: () => {},
+  logout: () => Promise.resolve(),
   subscription: null,
 });
 
@@ -25,51 +40,79 @@ export const useSupabaseUser = () => {
 };
 
 interface SupabaseUserProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export const SupabaseUserProvider: React.FC<SupabaseUserProviderProps> = ({
+export const SupabaseUserProvider: FC<SupabaseUserProviderProps> = ({
   children,
 }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<SupabaseUser>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const { toast } = useToast();
-  const pathname = usePathname();
-
+  const { resetStore } = useAppStoreActions();
+  const router = useRouter();
   const supabase = createClientComponentClient();
 
-  //Fetch the user details && subscriptions
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        const { data, error } = await getUserSubscriptionStatus(user.id);
-        if (data) setSubscription(data);
-        if (error) {
-          toast({
-            title: "Unexpected Error",
-            description:
-              "Opps! An unexpected error occurred. Please try again later.",
-          });
-        }
-      }
-    };
+    // subscribe to auth state
+    const {
+      data: { subscription: authListener },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        try {
+          const [userRes, subRes] = await Promise.all([
+            fetch(`/api/users/${session.user.id}`, {
+              credentials: "include",
+            }),
+            fetch("/api/subscription/status", {
+              credentials: "include",
+            }),
+          ]);
 
-    if (
-      !user &&
-      pathname !== "/" &&
-      pathname !== "/login" &&
-      pathname !== "/signup"
-    ) {
-      getUser();
-    }
-  }, [pathname, user, supabase, toast]);
+          const completeUser = await userRes.json();
+          const subscription = await subRes.json();
+
+          if (completeUser && "error" in completeUser)
+            throw new Error(completeUser.error);
+          if (subscription && "error" in subscription)
+            throw new Error(subscription.error);
+
+          setUser({ ...session.user, ...completeUser });
+          setSubscription(subscription);
+
+          document.documentElement.style.setProperty(
+            "--selection-color",
+            stringToColor(session.user.id)
+          );
+        } catch {
+          setUser(null);
+          setSubscription(null);
+          router.push("/login");
+        }
+      } else {
+        // logged out
+        setUser(null);
+        setSubscription(null);
+        resetStore();
+        router.push("/login");
+      }
+    });
+
+    return () => {
+      authListener.unsubscribe();
+    };
+  }, [supabase, resetStore, router]);
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut({ scope: "local" });
+  }, [supabase]);
+
+  const contextValue = useMemo(
+    () => ({ user, setUser, logout, subscription }),
+    [user, subscription, logout]
+  );
 
   return (
-    <SupabaseUserContext.Provider value={{ user, setUser, subscription }}>
+    <SupabaseUserContext.Provider value={contextValue}>
       {children}
     </SupabaseUserContext.Provider>
   );

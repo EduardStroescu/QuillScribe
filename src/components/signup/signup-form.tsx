@@ -15,12 +15,12 @@ import clsx from "clsx";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import Logo from "/public/quillScribeLogo.svg";
-import Loader from "@/components/global/Loader";
+import Loader from "@/components/global/loader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MailCheck } from "lucide-react";
 import { FormSchema } from "@/lib/types";
@@ -88,18 +88,11 @@ const SignupForm = () => {
           if (submitError) setSubmitError("");
         }}
         onSubmit={form.handleSubmit(onSubmit)}
-        className="w-full sm:justify-center sm:w-[400px]
-        space-y-6 flex
-        flex-col
-        "
+        className="w-full sm:justify-center sm:w-[400px] space-y-6 flex flex-col"
       >
         <Link
           href="/"
-          className="
-          w-full
-          flex
-          justify-left
-          items-center text-white"
+          className="w-full flex justify-left items-center text-white rounded ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <Image
             src={Logo}
@@ -109,17 +102,11 @@ const SignupForm = () => {
             height={100}
             style={{ width: "100px", height: "100px" }}
           />
-          <span
-            className="font-semibold
-          dark:text-white text-4xl first-letter:ml-2"
-          >
+          <span className="font-semibold dark:text-white text-4xl first-letter:ml-2">
             QuillScribe.
           </span>
         </Link>
-        <FormDescription
-          className="
-        text-[#cac2ff99]"
-        >
+        <FormDescription className="text-[#cac2ff99]">
           An all-In-One Collaboration and Productivity Platform
         </FormDescription>
         {!confirmation && !codeExchangeError && (
@@ -182,12 +169,15 @@ const SignupForm = () => {
         )}
 
         {submitError && <FormMessage>{submitError}</FormMessage>}
-        <span className="self-container text-[#cac2ff]">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary">
+        <div className="flex gap-2 text-[#cac2ff]">
+          <span>Already have an account?</span>
+          <Link
+            href="/login"
+            className="text-primary rounded ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             Login
           </Link>
-        </span>
+        </div>
         {(confirmation || codeExchangeError) && (
           <>
             <Alert className={confirmationAndErrorStyles}>
