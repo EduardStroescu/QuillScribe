@@ -22,10 +22,12 @@ import { Button } from "@/components/ui/button";
 import Loader from "@/components/global/loader";
 import { actionLoginUser } from "@/lib/server-actions/auth-actions";
 import DemoAccountLogin from "./demo-account-login";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 const LoginForm = () => {
   const router = useRouter();
   const [submitError, setSubmitError] = useState("");
+  const supabase = createClientComponentClient();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     mode: "onChange",
@@ -38,11 +40,12 @@ const LoginForm = () => {
   const onSubmit: SubmitHandler<z.infer<typeof FormSchema>> = async (
     formData
   ) => {
-    const { error } = await actionLoginUser(formData);
+    const { error, data } = await actionLoginUser(formData);
     if (error) {
       form.reset();
       setSubmitError(error.message);
-    } else {
+    } else if (data?.session) {
+      await supabase.auth.setSession(data.session);
       router.replace("/dashboard");
     }
   };

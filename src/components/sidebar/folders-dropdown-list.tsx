@@ -150,7 +150,7 @@ const FoldersDropdownList = () => {
             itemType="folder"
             content={folder}
             handlePreloadFiles={() => handlePreloadFiles(folder)}
-            isActive={!fileId && folder.id === folderId}
+            isActive={folder.id === folderId}
           >
             {folder.files
               .filter((file) => !file.inTrash)

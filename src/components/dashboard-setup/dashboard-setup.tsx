@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { v4 as uuid } from "uuid";
@@ -50,6 +50,11 @@ const DashboardSetup = ({ subscription }: { subscription: Subscription }) => {
       workspaceName: "",
     },
   });
+
+  // Close sidebar when dashboard setup is loaded
+  useEffect(() => {
+    setOpen(false);
+  }, [setOpen]);
 
   const onSubmit: SubmitHandler<
     z.infer<typeof CreateWorkspaceFormSchema>

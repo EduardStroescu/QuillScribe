@@ -19,6 +19,8 @@ import { useRouter } from "next/navigation";
 import { useAppStoreActions } from "../stores/app-store";
 import { stringToColor } from "../color-generator";
 
+const UNPROTECTED_ROUTES = ["/", "/login", "/signup"];
+
 type SupabaseUser = (AuthUser & User) | null;
 
 type SupabaseUserContextType = {
@@ -53,6 +55,16 @@ export const SupabaseUserProvider: FC<SupabaseUserProviderProps> = ({
   const supabase = createClientComponentClient();
 
   useEffect(() => {
+    function handleDisconnect(withStoreCleanup: boolean = false) {
+      setUser(null);
+      setSubscription(null);
+      if (withStoreCleanup) {
+        resetStore();
+      }
+      if (!UNPROTECTED_ROUTES.includes(window.location.pathname))
+        router.push("/login");
+    }
+
     // subscribe to auth state
     const {
       data: { subscription: authListener },
@@ -84,16 +96,11 @@ export const SupabaseUserProvider: FC<SupabaseUserProviderProps> = ({
             stringToColor(session.user.id)
           );
         } catch {
-          setUser(null);
-          setSubscription(null);
-          router.push("/login");
+          handleDisconnect();
         }
       } else {
         // logged out
-        setUser(null);
-        setSubscription(null);
-        resetStore();
-        router.push("/login");
+        handleDisconnect(true);
       }
     });
 
