@@ -24,7 +24,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { usePathname } from "next/navigation";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -76,13 +75,10 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile();
     const [openMobile, setOpenMobile] = React.useState(false);
-    const pathname = usePathname();
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
-    const [_open, _setOpen] = React.useState(
-      pathname === "/dashboard" ? false : defaultOpen
-    );
+    const [_open, _setOpen] = React.useState(defaultOpen);
     const open = openProp ?? _open;
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
@@ -105,15 +101,6 @@ const SidebarProvider = React.forwardRef<
         ? setOpenMobile((open) => !open)
         : setOpen((open) => !open);
     }, [isMobile, setOpen, setOpenMobile]);
-
-    // MAKE SIDEBAR INVISIBLE WHEN PATHNAME IS DASHBOARD
-    React.useEffect(() => {
-      if (pathname === "/dashboard") {
-        _setOpen((prev) => (prev ? false : prev));
-      } else if (pathname.startsWith("/dashboard")) {
-        _setOpen((prev) => (prev !== defaultOpen ? defaultOpen : prev));
-      }
-    }, [pathname, defaultOpen]);
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {

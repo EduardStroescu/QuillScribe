@@ -22,8 +22,10 @@ import { Button } from "@/components/ui/button";
 import Loader from "@/components/global/loader";
 import { actionLoginUser } from "@/lib/server-actions/auth-actions";
 import DemoAccountLogin from "./demo-account-login";
+import { useSupabaseUser } from "@/lib/providers/supabase-user-provider";
 
 const LoginForm = () => {
+  const { syncUser } = useSupabaseUser();
   const router = useRouter();
   const [submitError, setSubmitError] = useState("");
 
@@ -38,11 +40,12 @@ const LoginForm = () => {
   const onSubmit: SubmitHandler<z.infer<typeof FormSchema>> = async (
     formData
   ) => {
-    const { error } = await actionLoginUser(formData);
+    const { error, data } = await actionLoginUser(formData);
     if (error) {
       form.reset();
       setSubmitError(error.message);
-    } else {
+    } else if (data?.session) {
+      syncUser(data.session);
       router.replace("/dashboard");
     }
   };

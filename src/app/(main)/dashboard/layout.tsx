@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 import { QuillEditorProvider } from "@/lib/providers/quill-editor-provider";
 import { cookies } from "next/headers";
+import { SocketProvider } from "@/lib/providers/socket-provider";
 
 interface LayoutProps {
   children: ReactNode;
@@ -26,16 +27,20 @@ const Layout: FC<LayoutProps> = async ({ children }) => {
 
   return (
     <SubscriptionModalProvider products={products}>
-      <main className="flex overflow-hidden h-[100dvh] w-[100dvw]">
-        <SidebarProvider defaultOpen={defaultOpen}>
-          <QuillEditorProvider>
-            <Sidebar variant="inset">
-              <SidebarOptions />
-            </Sidebar>
-            <SidebarInset className="overflow-hidden">{children}</SidebarInset>
-          </QuillEditorProvider>
-        </SidebarProvider>
-      </main>
+      <SocketProvider>
+        <main className="flex overflow-hidden h-[100dvh] w-[100dvw]">
+          <SidebarProvider defaultOpen={defaultOpen}>
+            <QuillEditorProvider>
+              <Sidebar variant="inset">
+                <SidebarOptions />
+              </Sidebar>
+              <SidebarInset className="overflow-hidden">
+                {children}
+              </SidebarInset>
+            </QuillEditorProvider>
+          </SidebarProvider>
+        </main>
+      </SocketProvider>
     </SubscriptionModalProvider>
   );
 };

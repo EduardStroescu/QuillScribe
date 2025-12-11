@@ -5,13 +5,16 @@ import { actionLoginUser } from "@/lib/server-actions/auth-actions";
 import { useRouter } from "next/navigation";
 import { Separator } from "../ui/separator";
 import { type Dispatch, type FC, type SetStateAction } from "react";
+import { useSupabaseUser } from "@/lib/providers/supabase-user-provider";
 
 interface DemoAccontLoginProps {
   setSubmitError: Dispatch<SetStateAction<string>>;
 }
 
 const DemoAccountLogin: FC<DemoAccontLoginProps> = ({ setSubmitError }) => {
+  const { syncUser } = useSupabaseUser();
   const router = useRouter();
+
   const handleDemoLogin = async (type: string) => {
     const email =
       type === "Pro"
@@ -21,13 +24,16 @@ const DemoAccountLogin: FC<DemoAccontLoginProps> = ({ setSubmitError }) => {
       type === "Pro"
         ? process.env.NEXT_PUBLIC_PRO_DEMO_PASS!
         : process.env.NEXT_PUBLIC_FREE_DEMO_PASS!;
-    const { error } = await actionLoginUser({
+
+    const { error, data } = await actionLoginUser({
       email,
       password,
     });
+
     if (error) {
       setSubmitError(error.message);
-    } else {
+    } else if (data?.session) {
+      syncUser(data.session);
       router.replace("/dashboard");
     }
   };
